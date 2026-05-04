@@ -6,7 +6,7 @@ using Exiled.API.Features;
 using FermixAPI.Core;
 using UnityEngine;
 
-namespace FermixAPI
+namespace FermixAPI.Systems
 {
     /// <summary>
     /// Система управления комнатами и зонами.

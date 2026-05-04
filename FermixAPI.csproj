@@ -8,7 +8,7 @@
     <AssemblyName>FermixAPI</AssemblyName>
     <RootNamespace>FermixAPI</RootNamespace>
     <Version>2.1.0</Version>
-    <Authors>566hj</Authors>
+    <Authors>Fermix</Authors>
     <Description>Advanced API for Exiled (9.13.x) with LabAPI (1.1.x) integration</Description>
     <NoWarn>CS1591;CS1573;CS0618</NoWarn>
   </PropertyGroup>
@@ -108,6 +108,14 @@
     <Compile Remove="examples/**" />
     <None Include="examples/**/*.cs" />
     <None Include="examples/**/*.md" />
+  </ItemGroup>
+
+  <!-- vendor/ — копия исходников EXILED 9.13.3 и LabAPI 1.1.6 для справки;
+       не входит в сборку. Компилятор использует DLL из refs/. -->
+  <ItemGroup>
+    <Compile Remove="vendor/**" />
+    <EmbeddedResource Remove="vendor/**" />
+    <None Remove="vendor/**" />
   </ItemGroup>
 
 </Project>

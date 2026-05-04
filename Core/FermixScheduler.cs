@@ -16,6 +16,14 @@ namespace FermixAPI.Core
         private static readonly List<CoroutineHandle> _activeTasks = new List<CoroutineHandle>();
         private static bool _isInitialized;
 
+        // Удаляет завершившиеся handle из трекинга и регистрирует новый.
+        private static CoroutineHandle Track(CoroutineHandle handle)
+        {
+            _activeTasks.RemoveAll(h => !h.IsRunning);
+            _activeTasks.Add(handle);
+            return handle;
+        }
+
         // Сохранённый делегат, чтобы корректно отписаться при Shutdown.
         private static Action<RoundEndedEventArgs> _onRoundEndHandler;
 
@@ -64,9 +72,7 @@ namespace FermixAPI.Core
         /// <returns>Handle корутины для возможной отмены</returns>
         public static CoroutineHandle Delay(float delay, Action action)
         {
-            var handle = Timing.RunCoroutine(DelayedAction(delay, action));
-            _activeTasks.Add(handle);
-            return handle;
+            return Track(Timing.RunCoroutine(DelayedAction(delay, action)));
         }
 
         /// <summary>
@@ -77,9 +83,8 @@ namespace FermixAPI.Core
             // Отменяем предыдущую задачу с таким именем
             Cancel(name);
 
-            var handle = Timing.RunCoroutine(DelayedAction(delay, action), name);
+            var handle = Track(Timing.RunCoroutine(DelayedAction(delay, action), name));
             _namedTasks[name] = handle;
-            _activeTasks.Add(handle);
             return handle;
         }
 
@@ -109,9 +114,7 @@ namespace FermixAPI.Core
         /// <param name="count">Количество повторений (-1 = бесконечно)</param>
         public static CoroutineHandle Repeat(float interval, Action action, int count = -1)
         {
-            var handle = Timing.RunCoroutine(RepeatedAction(interval, action, count));
-            _activeTasks.Add(handle);
-            return handle;
+            return Track(Timing.RunCoroutine(RepeatedAction(interval, action, count)));
         }
 
         /// <summary>
@@ -121,9 +124,8 @@ namespace FermixAPI.Core
         {
             Cancel(name);
 
-            var handle = Timing.RunCoroutine(RepeatedAction(interval, action, count), name);
+            var handle = Track(Timing.RunCoroutine(RepeatedAction(interval, action, count), name));
             _namedTasks[name] = handle;
-            _activeTasks.Add(handle);
             return handle;
         }
 
@@ -160,9 +162,7 @@ namespace FermixAPI.Core
         /// <param name="onComplete">Callback по завершении</param>
         public static CoroutineHandle Countdown(float duration, Action<float> onTick, Action onComplete = null)
         {
-            var handle = Timing.RunCoroutine(CountdownCoroutine(duration, onTick, onComplete));
-            _activeTasks.Add(handle);
-            return handle;
+            return Track(Timing.RunCoroutine(CountdownCoroutine(duration, onTick, onComplete)));
         }
 
         private static IEnumerator<float> CountdownCoroutine(float duration, Action<float> onTick, Action onComplete)
@@ -233,9 +233,7 @@ namespace FermixAPI.Core
         /// <param name="timeout">Максимальное время ожидания (-1 = бесконечно)</param>
         public static CoroutineHandle WaitUntil(Func<bool> condition, Action action, float checkInterval = 0.1f, float timeout = -1f)
         {
-            var handle = Timing.RunCoroutine(WaitUntilCoroutine(condition, action, checkInterval, timeout));
-            _activeTasks.Add(handle);
-            return handle;
+            return Track(Timing.RunCoroutine(WaitUntilCoroutine(condition, action, checkInterval, timeout)));
         }
 
         private static IEnumerator<float> WaitUntilCoroutine(Func<bool> condition, Action action, float checkInterval, float timeout)
@@ -269,9 +267,7 @@ namespace FermixAPI.Core
         /// </summary>
         public static CoroutineHandle While(Func<bool> condition, Action action, float interval = 0.1f)
         {
-            var handle = Timing.RunCoroutine(WhileCoroutine(condition, action, interval));
-            _activeTasks.Add(handle);
-            return handle;
+            return Track(Timing.RunCoroutine(WhileCoroutine(condition, action, interval)));
         }
 
         private static IEnumerator<float> WhileCoroutine(Func<bool> condition, Action action, float interval)
@@ -381,7 +377,14 @@ namespace FermixAPI.Core
         /// <summary>
         /// Количество активных задач.
         /// </summary>
-        public static int ActiveTaskCount => _activeTasks.Count;
+        public static int ActiveTaskCount
+        {
+            get
+            {
+                _activeTasks.RemoveAll(h => !h.IsRunning);
+                return _activeTasks.Count;
+            }
+        }
 
         /// <summary>
         /// Проверяет, существует ли именованная задача.

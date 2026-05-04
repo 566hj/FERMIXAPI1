@@ -4,7 +4,7 @@ using FermixAPI.Core;
 using MEC;
 using System.Collections.Generic;
 
-namespace FermixAPI
+namespace FermixAPI.Systems
 {
     /// <summary>
     /// Расширенное управление боеголовкой.
@@ -169,7 +169,7 @@ namespace FermixAPI
         /// <summary>
         /// Проверяет, можно ли отменить взрыв.
         /// </summary>
-        public static bool CanBeStoped => Warhead.IsInProgress && !Warhead.IsLocked && Warhead.DetonationTimer > 10f;
+        public static bool CanBeStopped => Warhead.IsInProgress && !Warhead.IsLocked && Warhead.DetonationTimer > 10f;
 
         /// <summary>
         /// Время до взрыва.

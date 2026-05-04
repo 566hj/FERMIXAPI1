@@ -174,6 +174,10 @@ namespace FermixAPI.Core
                 Systems.FermixInput.Shutdown();
                 FermixHintStack.Shutdown();
 
+                // Очищаем LabAPI-регистрации
+                Integration.LabApiCommands.Clear();
+                Integration.LabApiEvents.ClearAll();
+
                 // Останавливаем планировщик
                 FermixScheduler.Shutdown();
 
@@ -271,6 +275,8 @@ namespace FermixAPI.Core
         /// </summary>
         public static CoroutineHandle RunCoroutine(IEnumerator<float> coroutine, string tag = null)
         {
+            PruneCompletedCoroutines();
+
             var handle = string.IsNullOrEmpty(tag)
                 ? Timing.RunCoroutine(coroutine)
                 : Timing.RunCoroutine(coroutine, tag);
@@ -298,6 +304,26 @@ namespace FermixAPI.Core
                 Timing.KillCoroutines(handle);
             }
             _activeCoroutines.Clear();
+        }
+
+        /// <summary>
+        /// Удаляет из трекинга корутины, которые уже завершились естественно.
+        /// </summary>
+        private static void PruneCompletedCoroutines()
+        {
+            _activeCoroutines.RemoveAll(h => !h.IsRunning);
+        }
+
+        /// <summary>
+        /// Текущее количество активных корутин (после очистки от завершившихся).
+        /// </summary>
+        public static int ActiveCoroutineCount
+        {
+            get
+            {
+                PruneCompletedCoroutines();
+                return _activeCoroutines.Count;
+            }
         }
 
         #endregion

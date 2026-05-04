@@ -7,7 +7,7 @@ using FermixAPI.Core;
 using PlayerRoles;
 using UnityEngine;
 
-namespace FermixAPI
+namespace FermixAPI.Systems
 {
     /// <summary>
     /// Система управления раундом и игровыми режимами.
