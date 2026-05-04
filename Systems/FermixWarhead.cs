@@ -303,7 +303,7 @@ namespace FermixAPI
                 StartWithTime(duration);
                 FermixLog.Warn($"Попытка взрыва {i + 1}/{attempts}");
                 
-                yield return Timing.WaitForSeconds(duration - 5f);
+                yield return Timing.WaitForSeconds(Math.Max(0f, duration - 5f));
                 
                 if (IsInProgress)
                 {
@@ -341,7 +341,7 @@ namespace FermixAPI
         {
             while (IsInProgress && TimeLeft > 0)
             {
-                byte intensity = (byte)Math.Min(255, (90 - TimeLeft) * 3);
+                byte intensity = (byte)Math.Max(0, Math.Min(255, (90 - TimeLeft) * 3));
                 ShakeScreen(intensity);
                 yield return Timing.WaitForSeconds(5f);
             }

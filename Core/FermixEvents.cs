@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Exiled.Events.EventArgs.Player;
 using Exiled.Events.EventArgs.Server;
 using Exiled.Events.EventArgs.Map;
@@ -9,6 +10,7 @@ using Exiled.Events.EventArgs.Scp173;
 using Exiled.Events.EventArgs.Scp939;
 using Exiled.Events.EventArgs.Scp079;
 using Exiled.Events.EventArgs.Warhead;
+using Exiled.Events.Features;
 using Handlers = Exiled.Events.Handlers;
 
 // Explicit namespaces for ambiguous types
@@ -24,6 +26,26 @@ namespace FermixAPI.Core
     public static class FermixEvents
     {
         private static bool _isRegistered;
+
+        // Все обработчики, которые мы подписали в Register(), сохраняются
+        // в виде action'ов отписки. Это позволяет корректно отписаться от
+        // EXILED-событий в Unregister() и избежать дублирования
+        // обработчиков при Refresh() / hot-reload.
+        private static readonly List<Action> _unsubscribers = new List<Action>();
+
+        private static void Sub<T>(Event<T> ev, Action<T> invoker)
+        {
+            CustomEventHandler<T> handler = e => invoker?.Invoke(e);
+            ev.Subscribe(handler);
+            _unsubscribers.Add(() => ev.Unsubscribe(handler));
+        }
+
+        private static void Sub(Event ev, Action invoker)
+        {
+            CustomEventHandler handler = () => invoker?.Invoke();
+            ev.Subscribe(handler);
+            _unsubscribers.Add(() => ev.Unsubscribe(handler));
+        }
 
         #region Player Events - Игрок
 
@@ -312,104 +334,104 @@ namespace FermixAPI.Core
             }
 
             // Player Events
-            Handlers.Player.Joined += ev => OnPlayerJoin?.Invoke(ev);
-            Handlers.Player.Left += ev => OnPlayerLeave?.Invoke(ev);
-            Handlers.Player.Dying += ev => OnPlayerDying?.Invoke(ev);
-            Handlers.Player.Died += ev => OnPlayerDied?.Invoke(ev);
-            Handlers.Player.Hurting += ev => OnPlayerHurt?.Invoke(ev);
-            Handlers.Player.ChangingRole += ev => OnRoleChange?.Invoke(ev);
-            Handlers.Player.Spawned += ev => OnPlayerSpawned?.Invoke(ev);
-            Handlers.Player.Escaping += ev => OnEscape?.Invoke(ev);
-            Handlers.Player.Handcuffing += ev => OnHandcuff?.Invoke(ev);
-            Handlers.Player.RemovingHandcuffs += ev => OnHandcuffRemove?.Invoke(ev);
-            Handlers.Player.IntercomSpeaking += ev => OnIntercomSpeak?.Invoke(ev);
-            Handlers.Player.Jumping += ev => OnJump?.Invoke(ev);
-            Handlers.Player.Landing += ev => OnLand?.Invoke(ev);
-            Handlers.Player.EnteringPocketDimension += ev => OnEnterPocket?.Invoke(ev);
-            Handlers.Player.EscapingPocketDimension += ev => OnEscapePocket?.Invoke(ev);
-            Handlers.Player.FailingEscapePocketDimension += ev => OnFailEscapePocket?.Invoke(ev);
-            Handlers.Player.Banned += ev => OnBanned?.Invoke(ev);
-            Handlers.Player.Kicked += ev => OnKicked?.Invoke(ev);
-            Handlers.Player.ActivatingGenerator += ev => OnActivateGenerator?.Invoke(ev);
-            Handlers.Player.StoppingGenerator += ev => OnStopGenerator?.Invoke(ev);
-            Handlers.Player.OpeningGenerator += ev => OnOpenGenerator?.Invoke(ev);
-            Handlers.Player.ClosingGenerator += ev => OnCloseGenerator?.Invoke(ev);
+            Sub(Handlers.Player.Joined,                       ev => OnPlayerJoin?.Invoke(ev));
+            Sub(Handlers.Player.Left,                         ev => OnPlayerLeave?.Invoke(ev));
+            Sub(Handlers.Player.Dying,                        ev => OnPlayerDying?.Invoke(ev));
+            Sub(Handlers.Player.Died,                         ev => OnPlayerDied?.Invoke(ev));
+            Sub(Handlers.Player.Hurting,                      ev => OnPlayerHurt?.Invoke(ev));
+            Sub(Handlers.Player.ChangingRole,                 ev => OnRoleChange?.Invoke(ev));
+            Sub(Handlers.Player.Spawned,                      ev => OnPlayerSpawned?.Invoke(ev));
+            Sub(Handlers.Player.Escaping,                     ev => OnEscape?.Invoke(ev));
+            Sub(Handlers.Player.Handcuffing,                  ev => OnHandcuff?.Invoke(ev));
+            Sub(Handlers.Player.RemovingHandcuffs,            ev => OnHandcuffRemove?.Invoke(ev));
+            Sub(Handlers.Player.IntercomSpeaking,             ev => OnIntercomSpeak?.Invoke(ev));
+            Sub(Handlers.Player.Jumping,                      ev => OnJump?.Invoke(ev));
+            Sub(Handlers.Player.Landing,                      ev => OnLand?.Invoke(ev));
+            Sub(Handlers.Player.EnteringPocketDimension,      ev => OnEnterPocket?.Invoke(ev));
+            Sub(Handlers.Player.EscapingPocketDimension,      ev => OnEscapePocket?.Invoke(ev));
+            Sub(Handlers.Player.FailingEscapePocketDimension, ev => OnFailEscapePocket?.Invoke(ev));
+            Sub(Handlers.Player.Banned,                       ev => OnBanned?.Invoke(ev));
+            Sub(Handlers.Player.Kicked,                       ev => OnKicked?.Invoke(ev));
+            Sub(Handlers.Player.ActivatingGenerator,          ev => OnActivateGenerator?.Invoke(ev));
+            Sub(Handlers.Player.StoppingGenerator,            ev => OnStopGenerator?.Invoke(ev));
+            Sub(Handlers.Player.OpeningGenerator,             ev => OnOpenGenerator?.Invoke(ev));
+            Sub(Handlers.Player.ClosingGenerator,             ev => OnCloseGenerator?.Invoke(ev));
 
             // Door & Locker Events
-            Handlers.Player.InteractingDoor += ev => OnDoorInteract?.Invoke(ev);
-            Handlers.Player.InteractingLocker += ev => OnLockerInteract?.Invoke(ev);
-            Handlers.Player.InteractingElevator += ev => OnElevatorInteract?.Invoke(ev);
+            Sub(Handlers.Player.InteractingDoor,     ev => OnDoorInteract?.Invoke(ev));
+            Sub(Handlers.Player.InteractingLocker,   ev => OnLockerInteract?.Invoke(ev));
+            Sub(Handlers.Player.InteractingElevator, ev => OnElevatorInteract?.Invoke(ev));
 
             // Item Events
-            Handlers.Player.PickingUpItem += ev => OnItemPickup?.Invoke(ev);
-            Handlers.Player.DroppingItem += ev => OnItemDrop?.Invoke(ev);
-            Handlers.Player.UsingItem += ev => OnItemUse?.Invoke(ev);
-            Handlers.Player.UsedItem += ev => OnItemUsed?.Invoke(ev);
-            Handlers.Player.CancellingItemUse += ev => OnItemUseCancel?.Invoke(ev);
-            Handlers.Player.ChangingItem += ev => OnItemChange?.Invoke(ev);
+            Sub(Handlers.Player.PickingUpItem,     ev => OnItemPickup?.Invoke(ev));
+            Sub(Handlers.Player.DroppingItem,      ev => OnItemDrop?.Invoke(ev));
+            Sub(Handlers.Player.UsingItem,         ev => OnItemUse?.Invoke(ev));
+            Sub(Handlers.Player.UsedItem,          ev => OnItemUsed?.Invoke(ev));
+            Sub(Handlers.Player.CancellingItemUse, ev => OnItemUseCancel?.Invoke(ev));
+            Sub(Handlers.Player.ChangingItem,      ev => OnItemChange?.Invoke(ev));
 
             // Weapon Events
-            Handlers.Player.Shooting += ev => OnShoot?.Invoke(ev);
-            Handlers.Player.Shot += ev => OnShot?.Invoke(ev);
-            Handlers.Player.ReloadingWeapon += ev => OnReload?.Invoke(ev);
-            Handlers.Player.UnloadingWeapon += ev => OnUnload?.Invoke(ev);
-            Handlers.Player.TogglingWeaponFlashlight += ev => OnToggleFlashlight?.Invoke(ev);
-            Handlers.Player.ThrowingRequest += ev => OnThrowRequest?.Invoke(ev);
-            Handlers.Player.ThrownProjectile += ev => OnThrown?.Invoke(ev);
+            Sub(Handlers.Player.Shooting,                 ev => OnShoot?.Invoke(ev));
+            Sub(Handlers.Player.Shot,                     ev => OnShot?.Invoke(ev));
+            Sub(Handlers.Player.ReloadingWeapon,          ev => OnReload?.Invoke(ev));
+            Sub(Handlers.Player.UnloadingWeapon,          ev => OnUnload?.Invoke(ev));
+            Sub(Handlers.Player.TogglingWeaponFlashlight, ev => OnToggleFlashlight?.Invoke(ev));
+            Sub(Handlers.Player.ThrowingRequest,          ev => OnThrowRequest?.Invoke(ev));
+            Sub(Handlers.Player.ThrownProjectile,         ev => OnThrown?.Invoke(ev));
 
             // Server Events
-            Handlers.Server.RoundStarted += () => OnRoundStart?.Invoke();
-            Handlers.Server.RoundEnded += ev => OnRoundEnd?.Invoke(ev);
-            Handlers.Server.WaitingForPlayers += () => OnWaiting?.Invoke();
-            Handlers.Server.RestartingRound += () => OnRestart?.Invoke();
-            Handlers.Server.ReportingCheater += ev => OnCheaterReport?.Invoke(ev);
-            Handlers.Server.LocalReporting += ev => OnLocalReport?.Invoke(ev);
-            Handlers.Server.RespawningTeam += ev => OnTeamRespawn?.Invoke(ev);
-            Handlers.Server.SelectingRespawnTeam += ev => OnTeamSelect?.Invoke(ev);
+            Sub(Handlers.Server.RoundStarted,          () => OnRoundStart?.Invoke());
+            Sub(Handlers.Server.RoundEnded,            ev => OnRoundEnd?.Invoke(ev));
+            Sub(Handlers.Server.WaitingForPlayers,     () => OnWaiting?.Invoke());
+            Sub(Handlers.Server.RestartingRound,       () => OnRestart?.Invoke());
+            Sub(Handlers.Server.ReportingCheater,      ev => OnCheaterReport?.Invoke(ev));
+            Sub(Handlers.Server.LocalReporting,        ev => OnLocalReport?.Invoke(ev));
+            Sub(Handlers.Server.RespawningTeam,        ev => OnTeamRespawn?.Invoke(ev));
+            Sub(Handlers.Server.SelectingRespawnTeam,  ev => OnTeamSelect?.Invoke(ev));
 
             // Map Events
-            Handlers.Map.Decontaminating += ev => OnDecontamination?.Invoke(ev);
-            Handlers.Map.GeneratorActivating += ev => OnGeneratorActivated?.Invoke(ev);
-            Handlers.Map.TurningOffLights += ev => OnLightsOff?.Invoke(ev);
-            Handlers.Map.AnnouncingNtfEntrance += ev => OnNtfAnnounce?.Invoke(ev);
-            Handlers.Map.AnnouncingScpTermination += ev => OnScpDeathAnnounce?.Invoke(ev);
+            Sub(Handlers.Map.Decontaminating,           ev => OnDecontamination?.Invoke(ev));
+            Sub(Handlers.Map.GeneratorActivating,       ev => OnGeneratorActivated?.Invoke(ev));
+            Sub(Handlers.Map.TurningOffLights,          ev => OnLightsOff?.Invoke(ev));
+            Sub(Handlers.Map.AnnouncingNtfEntrance,     ev => OnNtfAnnounce?.Invoke(ev));
+            Sub(Handlers.Map.AnnouncingScpTermination,  ev => OnScpDeathAnnounce?.Invoke(ev));
 
             // Warhead Events
-            Handlers.Warhead.Starting += ev => OnWarheadStart?.Invoke(ev);
-            Handlers.Warhead.Stopping += ev => OnWarheadStop?.Invoke(ev);
-            Handlers.Warhead.Detonated += () => OnWarheadDetonate?.Invoke();
-            Handlers.Warhead.ChangingLeverStatus += ev => OnWarheadButton?.Invoke(ev);
+            Sub(Handlers.Warhead.Starting,            ev => OnWarheadStart?.Invoke(ev));
+            Sub(Handlers.Warhead.Stopping,            ev => OnWarheadStop?.Invoke(ev));
+            Sub(Handlers.Warhead.Detonated,           () => OnWarheadDetonate?.Invoke());
+            Sub(Handlers.Warhead.ChangingLeverStatus, ev => OnWarheadButton?.Invoke(ev));
 
             // SCP-914 Events
-            Handlers.Scp914.Activating += ev => On914Activate?.Invoke(ev);
-            Handlers.Scp914.ChangingKnobSetting += ev => On914KnobChange?.Invoke(ev);
-            Handlers.Scp914.UpgradingPlayer += ev => On914UpgradePlayer?.Invoke(ev);
-            Handlers.Scp914.UpgradingPickup += ev => On914UpgradePickup?.Invoke(ev);
-            Handlers.Scp914.UpgradingInventoryItem += ev => On914UpgradeInventory?.Invoke(ev);
+            Sub(Handlers.Scp914.Activating,            ev => On914Activate?.Invoke(ev));
+            Sub(Handlers.Scp914.ChangingKnobSetting,   ev => On914KnobChange?.Invoke(ev));
+            Sub(Handlers.Scp914.UpgradingPlayer,       ev => On914UpgradePlayer?.Invoke(ev));
+            Sub(Handlers.Scp914.UpgradingPickup,       ev => On914UpgradePickup?.Invoke(ev));
+            Sub(Handlers.Scp914.UpgradingInventoryItem, ev => On914UpgradeInventory?.Invoke(ev));
 
             // SCP Events
-            Handlers.Scp049.FinishingRecall += ev => On049Recall?.Invoke(ev);
-            Handlers.Scp049.StartingRecall += ev => On049StartRecall?.Invoke(ev);
-            Handlers.Scp049.Attacking += ev => On049Attack?.Invoke(ev);
+            Sub(Handlers.Scp049.FinishingRecall, ev => On049Recall?.Invoke(ev));
+            Sub(Handlers.Scp049.StartingRecall,  ev => On049StartRecall?.Invoke(ev));
+            Sub(Handlers.Scp049.Attacking,       ev => On049Attack?.Invoke(ev));
 
-            Handlers.Scp096.AddingTarget += ev => On096AddTarget?.Invoke(ev);
-            Handlers.Scp096.CalmingDown += ev => On096CalmDown?.Invoke(ev);
-            Handlers.Scp096.Enraging += ev => On096Enrage?.Invoke(ev);
+            Sub(Handlers.Scp096.AddingTarget, ev => On096AddTarget?.Invoke(ev));
+            Sub(Handlers.Scp096.CalmingDown,  ev => On096CalmDown?.Invoke(ev));
+            Sub(Handlers.Scp096.Enraging,     ev => On096Enrage?.Invoke(ev));
 
-            Handlers.Scp106.Attacking += ev => On106Attack?.Invoke(ev);
-            Handlers.Scp106.Teleporting += ev => On106Teleport?.Invoke(ev);
+            Sub(Handlers.Scp106.Attacking,    ev => On106Attack?.Invoke(ev));
+            Sub(Handlers.Scp106.Teleporting,  ev => On106Teleport?.Invoke(ev));
 
-            Handlers.Scp173.Blinking += ev => On173Blink?.Invoke(ev);
+            Sub(Handlers.Scp173.Blinking,     ev => On173Blink?.Invoke(ev));
 
-            Handlers.Scp939.PlacingAmnesticCloud += ev => On939AmnesticCloud?.Invoke(ev);
-            Handlers.Scp939.SavingVoice += ev => On939SaveVoice?.Invoke(ev);
-            Handlers.Scp939.PlayingVoice += ev => On939PlayVoice?.Invoke(ev);
+            Sub(Handlers.Scp939.PlacingAmnesticCloud, ev => On939AmnesticCloud?.Invoke(ev));
+            Sub(Handlers.Scp939.SavingVoice,          ev => On939SaveVoice?.Invoke(ev));
+            Sub(Handlers.Scp939.PlayingVoice,         ev => On939PlayVoice?.Invoke(ev));
 
-            Handlers.Scp079.TriggeringDoor += ev => On079Door?.Invoke(ev);
-            Handlers.Scp079.InteractingTesla += ev => On079Tesla?.Invoke(ev);
-            Handlers.Scp079.ChangingCamera += ev => On079Camera?.Invoke(ev);
-            Handlers.Scp079.GainingLevel += ev => On079LevelUp?.Invoke(ev);
-            Handlers.Scp079.GainingExperience += ev => On079GainExp?.Invoke(ev);
+            Sub(Handlers.Scp079.TriggeringDoor,      ev => On079Door?.Invoke(ev));
+            Sub(Handlers.Scp079.InteractingTesla,    ev => On079Tesla?.Invoke(ev));
+            Sub(Handlers.Scp079.ChangingCamera,      ev => On079Camera?.Invoke(ev));
+            Sub(Handlers.Scp079.GainingLevel,        ev => On079LevelUp?.Invoke(ev));
+            Sub(Handlers.Scp079.GainingExperience,   ev => On079GainExp?.Invoke(ev));
 
             _isRegistered = true;
             FermixLog.Debug("Все события зарегистрированы.");
@@ -420,8 +442,22 @@ namespace FermixAPI.Core
         /// </summary>
         public static void Unregister()
         {
-            // Примечание: В идеале нужно хранить делегаты и отписываться от них.
-            // Для упрощения здесь мы просто помечаем как не зарегистрированные.
+            if (!_isRegistered)
+                return;
+
+            foreach (var unsub in _unsubscribers)
+            {
+                try
+                {
+                    unsub();
+                }
+                catch (Exception ex)
+                {
+                    FermixLog.Error($"Ошибка отписки от события: {ex.Message}");
+                }
+            }
+
+            _unsubscribers.Clear();
             _isRegistered = false;
             FermixLog.Debug("События отписаны.");
         }
