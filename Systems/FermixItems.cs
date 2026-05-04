@@ -368,17 +368,8 @@ namespace FermixAPI.Systems
             ItemType.Ammo44cal
         };
 
-        /// <summary>
-        /// Выдаёт все патроны.
-        /// </summary>
-        public static void GiveAllAmmo(this Player player, ushort amount = 200)
-        {
-            player.Ammo[ItemType.Ammo9x19] = amount;
-            player.Ammo[ItemType.Ammo556x45] = amount;
-            player.Ammo[ItemType.Ammo762x39] = amount;
-            player.Ammo[ItemType.Ammo12gauge] = amount;
-            player.Ammo[ItemType.Ammo44cal] = amount;
-        }
+        // GiveAllAmmo — каноническая версия в Extensions/PlayerExtensions.cs
+        // (она ограничивает 12gauge/44cal до 50, как в реальном инвентаре).
 
         /// <summary>
         /// Очищает все патроны.
@@ -485,13 +476,7 @@ namespace FermixAPI.Systems
 
         #region Inventory Helpers - Помощники Инвентаря
 
-        /// <summary>
-        /// Проверяет, есть ли предмет у игрока.
-        /// </summary>
-        public static bool HasItem(this Player player, ItemType type)
-        {
-            return player.Items.Any(i => i.Type == type);
-        }
+        // HasItem — каноническая версия в Extensions/PlayerExtensions.cs.
 
         /// <summary>
         /// Проверяет, есть ли любой из указанных предметов.

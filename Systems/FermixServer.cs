@@ -7,7 +7,7 @@ using FermixAPI.Core;
 using PlayerRoles;
 using UnityEngine;
 
-namespace FermixAPI
+namespace FermixAPI.Systems
 {
     /// <summary>
     /// Система управления сервером и глобальными операциями.
@@ -115,15 +115,23 @@ namespace FermixAPI
         }
 
         /// <summary>
-        /// Получает игрока по нику.
-        /// </summary>
-
-        /// <summary>
         /// Получает игрока по UserID.
         /// </summary>
-        public static Player GetByUserId(string oderId)
+        public static Player GetByUserId(string userId)
         {
-            return Player.Get(oderId);
+            return Player.Get(userId);
+        }
+
+        /// <summary>
+        /// Получает игрока по нику.
+        /// </summary>
+        public static Player GetByNickname(string nickname)
+        {
+            if (string.IsNullOrEmpty(nickname))
+                return null;
+            return Player.List.FirstOrDefault(p =>
+                p.Nickname != null &&
+                p.Nickname.IndexOf(nickname, System.StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
         #endregion
@@ -239,18 +247,6 @@ namespace FermixAPI
             Respawn.ForceWave(faction);
             FermixLog.Action($"Принудительный респавн: {faction}");
         }
-
-        /// <summary>
-        /// Устанавливает время до следующего респавна.
-        /// </summary>
-
-        /// <summary>
-        /// Получает время до следующего респавна.
-        /// </summary>
-  
-        /// <summary>
-        /// Мгновенный респавн.
-        /// </summary>
 
         #endregion
 
@@ -588,30 +584,43 @@ namespace FermixAPI
         /// <summary>
         /// Воспроизводит сообщение CASSIE.
         /// </summary>
+        public static void CassieMessage(string message, bool isHeld = false, bool isNoisy = true, bool isSubtitles = false)
+        {
+            Exiled.API.Features.Cassie.Message(message, isHeld, isNoisy, isSubtitles);
+            FermixLog.Action($"CASSIE: {message}");
+        }
 
         /// <summary>
-        /// Воспроизводит тихое сообщение CASSIE.
+        /// Воспроизводит сообщение CASSIE с переводом-субтитрами.
         /// </summary>
+        public static void CassieMessageTranslated(string message, string translation, bool isHeld = false, bool isNoisy = true, bool isSubtitles = true)
+        {
+            Exiled.API.Features.Cassie.MessageTranslated(message, translation, isHeld, isNoisy, isSubtitles);
+        }
 
         /// <summary>
         /// Воспроизводит сообщение CASSIE с задержкой.
         /// </summary>
+        public static void CassieDelayedMessage(string message, float delay, bool isHeld = false, bool isNoisy = true, bool isSubtitles = false)
+        {
+            Exiled.API.Features.Cassie.DelayedMessage(message, delay, isHeld, isNoisy, isSubtitles);
+        }
+
+        /// <summary>
+        /// Воспроизводит «глитчи» CASSIE-сообщения.
+        /// </summary>
+        public static void CassieGlitchyMessage(string message, float glitchChance, float jamChance)
+        {
+            Exiled.API.Features.Cassie.GlitchyMessage(message, glitchChance, jamChance);
+        }
 
         /// <summary>
         /// Очищает очередь CASSIE.
         /// </summary>
-
-        /// <summary>
-        /// Объявление о взрыве комплекса.
-        /// </summary>
-
-        /// <summary>
-        /// Объявление о нарушении изоляции.
-        /// </summary>
-  
-        /// <summary>
-        /// Пользовательское объявление с субтитрами.
-        /// </summary>
+        public static void CassieClear()
+        {
+            Exiled.API.Features.Cassie.Clear();
+        }
 
         #endregion
     }

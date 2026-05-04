@@ -8,7 +8,7 @@ using FermixAPI.Core;
 using PlayerRoles;
 using UnityEngine;
 
-namespace FermixAPI
+namespace FermixAPI.Systems
 {
     /// <summary>
     /// Система управления SCP и их способностями.
@@ -246,10 +246,6 @@ namespace FermixAPI
         }
 
         /// <summary>
-        /// Телепортирует SCP-106 в карманное измерение.
-        /// </summary>
-
-        /// <summary>
         /// Отправляет игрока в карманное измерение.
         /// </summary>
         public static void SendToPocket(Player target)
@@ -277,10 +273,6 @@ namespace FermixAPI
         {
             return player.Role as Scp173Role;
         }
-
-        /// <summary>
-        /// Мигает всеми наблюдателями SCP-173.
-        /// </summary>
 
         /// <summary>
         /// Устанавливает время перезарядки мигания.

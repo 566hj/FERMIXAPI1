@@ -16,54 +16,6 @@ namespace FermixAPI.Systems
     /// </summary>
     public static class FermixRoles
     {
-        #region Кэширование
-        
-        private static readonly Dictionary<RoleTypeId, RoleInfo> RoleInfoCache = new();
-        
-        /// <summary>
-        /// Информация о роли
-        /// </summary>
-        public class RoleInfo
-        {
-            public RoleTypeId RoleType { get; set; }
-            public string Name { get; set; }
-            public Team Team { get; set; }
-            public Side Side { get; set; }
-            public Color Color { get; set; }
-            public bool IsScp { get; set; }
-            public bool IsHuman { get; set; }
-            public bool IsAlive { get; set; }
-            public int MaxHealth { get; set; }
-        }
-        
-        private static int GetDefaultMaxHealth(RoleTypeId role)
-        {
-            return role switch
-            {
-                RoleTypeId.Scp173 => 3200,
-                RoleTypeId.Scp106 => 650,
-                RoleTypeId.Scp049 => 1700,
-                RoleTypeId.Scp096 => 500,
-                RoleTypeId.Scp939 => 1800,
-                RoleTypeId.Scp0492 => 400,
-                RoleTypeId.ClassD => 100,
-                RoleTypeId.Scientist => 100,
-                RoleTypeId.FacilityGuard => 100,
-                RoleTypeId.NtfPrivate => 100,
-                RoleTypeId.NtfSergeant => 100,
-                RoleTypeId.NtfSpecialist => 100,
-                RoleTypeId.NtfCaptain => 150,
-                RoleTypeId.ChaosConscript => 100,
-                RoleTypeId.ChaosRifleman => 100,
-                RoleTypeId.ChaosRepressor => 100,
-                RoleTypeId.ChaosMarauder => 100,
-                RoleTypeId.Tutorial => 100,
-                _ => 100
-            };
-        }
-        
-        #endregion
-        
         #region Получение игроков по ролям
         
         /// <summary>

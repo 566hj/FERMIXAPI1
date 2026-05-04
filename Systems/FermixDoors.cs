@@ -7,7 +7,7 @@ using Exiled.API.Features.Doors;
 using FermixAPI.Core;
 using UnityEngine;
 
-namespace FermixAPI
+namespace FermixAPI.Systems
 {
     /// <summary>
     /// Система управления дверями с расширенными возможностями.
