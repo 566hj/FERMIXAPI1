@@ -24,35 +24,37 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Install SteamCMD prerequisites
-        run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            lib32gcc-s1 lib32stdc++6 ca-certificates curl unzip
-
-      - name: Install SteamCMD
-        run: |
-          mkdir -p "$HOME/steamcmd"
-          curl -sSL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz \
-            | tar -xz -C "$HOME/steamcmd"
-
       - name: Cache SCP:SL Dedicated Server
         id: cache-scpsl
         uses: actions/cache@v4
         with:
           path: ~/scpsl_server/SCPSL_Data/Managed
-          key: scpsl-server-managed-${{ runner.os }}-v3
+          key: scpsl-server-managed-${{ runner.os }}-v4
+
+      - name: Setup SteamCMD
+        if: steps.cache-scpsl.outputs.cache-hit != 'true'
+        uses: CyberAndrii/setup-steamcmd@v1
 
       - name: Download SCP:SL Dedicated Server (app 996560)
         if: steps.cache-scpsl.outputs.cache-hit != 'true'
         run: |
-          "$HOME/steamcmd/steamcmd.sh" \
-            +@sSteamCmdForcePlatformType linux \
-            +force_install_dir "$HOME/scpsl_server" \
-            +login anonymous \
-            +app_update 996560 validate \
-            +quit
+          # Retry a few times — Steam sometimes returns "Missing configuration"
+          # on the first run with a fresh steamcmd install.
+          attempt=0
+          until steamcmd \
+              +force_install_dir "$HOME/scpsl_server" \
+              +login anonymous \
+              +app_update 996560 validate \
+              +quit; do
+            attempt=$((attempt + 1))
+            if [ "$attempt" -ge 4 ]; then
+              echo "steamcmd failed after $attempt attempts" >&2
+              exit 1
+            fi
+            echo "steamcmd attempt $attempt failed; cleaning appmanifest and retrying..."
+            rm -f "$HOME/scpsl_server/steamapps/appmanifest_996560.acf" || true
+            sleep 5
+          done
 
       - name: Fetch EXILED + LabAPI references
         run: bash scripts/fetch-references.sh
