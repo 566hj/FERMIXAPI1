@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Exiled.API.Features;
+using Exiled.Events.EventArgs.Server;
 using MEC;
 
 namespace FermixAPI.Core
@@ -15,6 +16,9 @@ namespace FermixAPI.Core
         private static readonly List<CoroutineHandle> _activeTasks = new List<CoroutineHandle>();
         private static bool _isInitialized;
 
+        // Сохранённый делегат, чтобы корректно отписаться при Shutdown.
+        private static Action<RoundEndedEventArgs> _onRoundEndHandler;
+
         #region Initialization
 
         /// <summary>
@@ -24,8 +28,9 @@ namespace FermixAPI.Core
         {
             if (_isInitialized) return;
 
-            // Подписываемся на конец раунда для очистки задач
-            FermixEvents.OnRoundEnd += _ => ClearRoundTasks();
+            // Подписываемся на конец раунда для очистки задач (с возможностью корректной отписки).
+            _onRoundEndHandler = _ => ClearRoundTasks();
+            FermixEvents.OnRoundEnd += _onRoundEndHandler;
 
             _isInitialized = true;
             FermixLog.Debug("Планировщик задач инициализирован.");
@@ -37,6 +42,13 @@ namespace FermixAPI.Core
         public static void Shutdown()
         {
             CancelAll();
+
+            if (_onRoundEndHandler != null)
+            {
+                FermixEvents.OnRoundEnd -= _onRoundEndHandler;
+                _onRoundEndHandler = null;
+            }
+
             _isInitialized = false;
         }
 

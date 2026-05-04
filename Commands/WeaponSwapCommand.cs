@@ -18,12 +18,6 @@ namespace FermixAPI.Commands
     {
         private static readonly Dictionary<ItemType, ItemType> SwapMap = new()
         {
-            // self-swap (запасной слот)
-            { ItemType.GunCOM15,    ItemType.GunCOM15 },
-            { ItemType.GunCOM18,    ItemType.GunCOM18 },
-            { ItemType.GunCom45,    ItemType.GunCom45 },
-            { ItemType.GunRevolver, ItemType.GunRevolver },
-            { ItemType.GunShotgun,  ItemType.GunShotgun },
             // SMG-цикл
             { ItemType.GunFSP9,     ItemType.GunA7 },
             { ItemType.GunA7,       ItemType.GunCrossvec },
@@ -34,6 +28,8 @@ namespace FermixAPI.Commands
             // тяжёлые
             { ItemType.GunLogicer,  ItemType.GunFRMG0 },
             { ItemType.GunFRMG0,    ItemType.GunLogicer },
+            // Пистолеты/револьвер/дробовик не имеют пары — Execute вернёт ошибку,
+            // не уничтожая текущее оружие (чтобы не сбросить патроны/моды).
         };
 
         /// <summary>Оружие, которое нельзя свапать (уникальное / событийное).</summary>
@@ -94,8 +90,13 @@ namespace FermixAPI.Commands
                 return false;
             }
 
-            if (!SwapMap.TryGetValue(current.Type, out var target))
-                target = ItemType.GunCOM15; // безопасный fallback
+            if (!SwapMap.TryGetValue(current.Type, out var target) || target == current.Type)
+            {
+                // Не пересоздаём оружие, если для него нет реальной пары —
+                // иначе пропадут патроны и attachment'ы (см. Devin Review).
+                response = "Для этого оружия нет парного варианта.";
+                return false;
+            }
 
             player.RemoveItem(current, true);
             var newWeapon = player.AddItem(target);

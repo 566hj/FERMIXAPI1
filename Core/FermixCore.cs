@@ -112,6 +112,11 @@ namespace FermixAPI.Core
 
             try
             {
+                // Создаём стандартную структуру каталогов FermixAPI
+                FermixPaths.Initialize();
+                Utils.FermixConfigUtils.Initialize();
+                Utils.FermixData.Initialize();
+
                 // Подписываемся на событие ожидания игроков для вывода логотипа
                 Handlers.Server.WaitingForPlayers += OnWaitingForPlayers;
 

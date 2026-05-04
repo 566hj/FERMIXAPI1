@@ -103,4 +103,11 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
+  <!-- examples/ — справочные сэмплы для пользователей API; не часть FermixAPI.dll -->
+  <ItemGroup>
+    <Compile Remove="examples/**" />
+    <None Include="examples/**/*.cs" />
+    <None Include="examples/**/*.md" />
+  </ItemGroup>
+
 </Project>
