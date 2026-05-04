@@ -8,7 +8,13 @@ using MEC;
 namespace FermixAPI
 {
     /// <summary>
-    /// Расширенная система хинтов с поддержкой форматирования, анимаций и HintServiceMeow.
+    /// Расширенная система хинтов с поддержкой форматирования, анимаций, приоритетов и стека.
+    ///
+    /// Все базовые методы (Send / Success / Error / Warning / Info / SendToAll / ...) под капотом
+    /// направлены в <see cref="FermixHintStack"/>: их можно вызывать одновременно, и они
+    /// будут аккуратно стэкаться, а не перезатирать друг друга. Анимационные методы
+    /// (SendTyping / SendBlinking / SendFade и т.д.) по-прежнему пишут в <c>player.ShowHint</c>
+    /// напрямую — на время анимации они временно перекрывают стек.
     /// </summary>
     public static class FermixHint
     {
@@ -36,19 +42,19 @@ namespace FermixAPI
         #region Basic Hints - Базовые Хинты
 
         /// <summary>
-        /// Отправляет простой хинт.
+        /// Отправляет простой хинт. Стэкается с другими хинтами.
         /// </summary>
         public static void Send(Player player, string message, float duration = 5f)
         {
-            player.ShowHint(message, duration);
+            FermixHintStack.ShowHint(player, message, duration, category: HintCategory.Custom);
         }
 
         /// <summary>
-        /// Отправляет цветной хинт.
+        /// Отправляет цветной хинт. Стэкается с другими хинтами.
         /// </summary>
         public static void SendColored(Player player, string message, string color, float duration = 5f)
         {
-            player.ShowHint(Color(message, color), duration);
+            FermixHintStack.ShowHint(player, message, duration, color: color, category: HintCategory.Custom);
         }
 
         /// <summary>
@@ -56,7 +62,7 @@ namespace FermixAPI
         /// </summary>
         public static void Success(Player player, string message, float duration = 3f)
         {
-            player.ShowHint(Color(message, Green), duration);
+            FermixHintStack.ShowHint(player, message, duration, category: HintCategory.Success);
         }
 
         /// <summary>
@@ -64,7 +70,7 @@ namespace FermixAPI
         /// </summary>
         public static void Error(Player player, string message, float duration = 3f)
         {
-            player.ShowHint(Color($"[!] {message}", Red), duration);
+            FermixHintStack.ShowHint(player, message, duration, category: HintCategory.Error, customPrefix: "[!]");
         }
 
         /// <summary>
@@ -72,7 +78,7 @@ namespace FermixAPI
         /// </summary>
         public static void Warning(Player player, string message, float duration = 3f)
         {
-            player.ShowHint(Color($"[!] {message}", Yellow), duration);
+            FermixHintStack.ShowHint(player, message, duration, category: HintCategory.Warning, customPrefix: "[!]");
         }
 
         /// <summary>
@@ -80,7 +86,7 @@ namespace FermixAPI
         /// </summary>
         public static void Info(Player player, string message, float duration = 3f)
         {
-            player.ShowHint(Color(message, Cyan), duration);
+            FermixHintStack.ShowHint(player, message, duration, category: HintCategory.Info);
         }
 
         #endregion
@@ -88,13 +94,13 @@ namespace FermixAPI
         #region Global Hints - Глобальные Хинты
 
         /// <summary>
-        /// Отправляет хинт всем игрокам.
+        /// Отправляет хинт всем игрокам. Стэкается у каждого индивидуально.
         /// </summary>
         public static void SendToAll(string message, float duration = 5f)
         {
             foreach (var player in Player.List)
             {
-                player.ShowHint(message, duration);
+                FermixHintStack.ShowHint(player, message, duration, category: HintCategory.Custom);
             }
         }
 
@@ -103,10 +109,9 @@ namespace FermixAPI
         /// </summary>
         public static void SendToAllColored(string message, string color, float duration = 5f)
         {
-            var formatted = Color(message, color);
             foreach (var player in Player.List)
             {
-                player.ShowHint(formatted, duration);
+                FermixHintStack.ShowHint(player, message, duration, color: color, category: HintCategory.Custom);
             }
         }
 
@@ -115,7 +120,10 @@ namespace FermixAPI
         /// </summary>
         public static void SuccessToAll(string message, float duration = 3f)
         {
-            SendToAllColored(message, Green, duration);
+            foreach (var player in Player.List)
+            {
+                FermixHintStack.ShowHint(player, message, duration, category: HintCategory.Success);
+            }
         }
 
         /// <summary>
@@ -123,7 +131,10 @@ namespace FermixAPI
         /// </summary>
         public static void ErrorToAll(string message, float duration = 3f)
         {
-            SendToAllColored($"[!] {message}", Red, duration);
+            foreach (var player in Player.List)
+            {
+                FermixHintStack.ShowHint(player, message, duration, category: HintCategory.Error, customPrefix: "[!]");
+            }
         }
 
         /// <summary>
@@ -135,10 +146,128 @@ namespace FermixAPI
             {
                 if (predicate(player))
                 {
-                    player.ShowHint(message, duration);
+                    FermixHintStack.ShowHint(player, message, duration, category: HintCategory.Custom);
                 }
             }
         }
+
+        #endregion
+
+        #region Stacked Hints - Хинты со стеком и приоритетами
+
+        /// <summary>
+        /// Показывает хинт через <see cref="FermixHintStack"/> с явным приоритетом, категорией и id.
+        /// Идеально, когда нужно несколько одновременных хинтов, не затирающих друг друга.
+        /// </summary>
+        public static void ShowStacked(
+            Player player,
+            string message,
+            float duration = 5f,
+            int priority = 0,
+            string id = null,
+            HintCategory category = HintCategory.Custom,
+            string color = null,
+            string customPrefix = null,
+            int fontSize = 0)
+        {
+            FermixHintStack.ShowHint(
+                player, message, duration,
+                priority: priority,
+                id: id,
+                category: category,
+                color: color,
+                customPrefix: customPrefix,
+                fontSize: fontSize);
+        }
+
+        /// <summary>
+        /// Показывает динамический хинт. Текст обновляется через <paramref name="updateFunction"/>
+        /// каждые <paramref name="updateInterval"/> секунд (например, для индикаторов HP/патронов).
+        /// </summary>
+        public static void ShowDynamic(
+            Player player,
+            Func<Player, string> updateFunction,
+            float duration = 5f,
+            float updateInterval = 1f,
+            int priority = 0,
+            string id = null,
+            HintCategory category = HintCategory.Custom,
+            string color = null)
+        {
+            FermixHintStack.ShowDynamicHint(
+                player, updateFunction, duration, updateInterval,
+                priority: priority, id: id, category: category, color: color);
+        }
+
+        /// <summary>
+        /// Показывает persistent-хинт (без таймера) с уникальным <paramref name="id"/>.
+        /// Снимается явным <see cref="RemoveStacked"/> или <see cref="ClearStacked"/>.
+        /// </summary>
+        public static void ShowPersistent(
+            Player player,
+            string message,
+            string id,
+            int priority = 0,
+            HintCategory category = HintCategory.Custom,
+            string color = null,
+            string customPrefix = null,
+            int fontSize = 0)
+        {
+            FermixHintStack.ShowPersistentHint(
+                player, message, id,
+                priority: priority,
+                category: category,
+                color: color,
+                customPrefix: customPrefix,
+                fontSize: fontSize);
+        }
+
+        /// <summary>
+        /// Persistent-хинт с динамическим обновлением. Полезно для постоянных индикаторов.
+        /// </summary>
+        public static void ShowPersistentDynamic(
+            Player player,
+            Func<Player, string> updateFunction,
+            string id,
+            float updateInterval = 1f,
+            int priority = 0,
+            HintCategory category = HintCategory.Custom,
+            string color = null)
+        {
+            FermixHintStack.ShowPersistentDynamicHint(
+                player, updateFunction, id, updateInterval,
+                priority: priority, category: category, color: color);
+        }
+
+        /// <summary>
+        /// Удаляет stacked-хинт по <paramref name="id"/>.
+        /// </summary>
+        public static void RemoveStacked(Player player, string id)
+            => FermixHintStack.RemoveHint(player, id);
+
+        /// <summary>
+        /// Очищает все stacked-хинты у игрока.
+        /// </summary>
+        public static void ClearStacked(Player player)
+            => FermixHintStack.ClearAllHints(player);
+
+        /// <summary>
+        /// Очищает все stacked-хинты у всех игроков.
+        /// </summary>
+        public static void ClearStackedAll()
+            => FermixHintStack.ClearAllHints();
+
+        /// <summary>
+        /// Есть ли у игрока stacked-хинт с указанным id.
+        /// </summary>
+        public static bool HasStacked(Player player, string id)
+            => FermixHintStack.HasHint(player, id);
+
+        /// <summary>
+        /// Сколько stacked-хинтов сейчас активно у игрока.
+        /// </summary>
+        public static int StackedCount(Player player)
+            => FermixHintStack.GetHintCount(player);
 
         #endregion
 
@@ -150,7 +279,7 @@ namespace FermixAPI
         public static void SendWithTitle(Player player, string title, string message, float duration = 5f)
         {
             var formatted = $"{Bold(Size(title, 30))}\n{message}";
-            player.ShowHint(formatted, duration);
+            FermixHintStack.ShowHint(player, formatted, duration, category: HintCategory.Custom, showBullet: false);
         }
 
         /// <summary>
@@ -160,27 +289,30 @@ namespace FermixAPI
         {
             var sb = new StringBuilder();
             sb.AppendLine(Bold(title));
-            
+
             foreach (var item in items)
-            {
                 sb.AppendLine($"• {item}");
-            }
-            
-            player.ShowHint(sb.ToString(), duration);
+
+            FermixHintStack.ShowHint(player, sb.ToString(), duration, category: HintCategory.Custom, showBullet: false);
         }
 
         /// <summary>
-        /// Отправляет хинт с прогресс-баром.
+        /// Отправляет хинт с прогресс-баром. Часто обновляется — рекомендуется один и тот же id.
         /// </summary>
         public static void SendProgress(Player player, string label, float progress, int barLength = 20, float duration = 1f)
         {
-            var filled = (int)(progress * barLength);
+            var clamped = Math.Max(0f, Math.Min(1f, progress));
+            var filled = (int)(clamped * barLength);
             var empty = barLength - filled;
-            
-            var bar = $"[{new string('█', filled)}{new string('░', empty)}] {(progress * 100):F0}%";
+
+            var bar = $"[{new string('█', filled)}{new string('░', empty)}] {(clamped * 100):F0}%";
             var formatted = $"{label}\n{bar}";
-            
-            player.ShowHint(formatted, duration);
+
+            FermixHintStack.ShowHint(
+                player, formatted, duration,
+                id: $"fermix_progress_{label}",
+                category: HintCategory.Custom,
+                showBullet: false);
         }
 
         /// <summary>
@@ -188,7 +320,7 @@ namespace FermixAPI
         /// </summary>
         public static void SendMultiline(Player player, float duration, params string[] lines)
         {
-            player.ShowHint(string.Join("\n", lines), duration);
+            FermixHintStack.ShowHint(player, string.Join("\n", lines), duration, category: HintCategory.Custom, showBullet: false);
         }
 
         #endregion
@@ -466,7 +598,7 @@ namespace FermixAPI
 
             public void SendTo(Player player)
             {
-                player.ShowHint(Build(), _duration);
+                FermixHintStack.ShowHint(player, Build(), _duration, category: HintCategory.Custom, showBullet: false);
             }
 
             public void SendToAll()
@@ -474,7 +606,7 @@ namespace FermixAPI
                 var hint = Build();
                 foreach (var player in Player.List)
                 {
-                    player.ShowHint(hint, _duration);
+                    FermixHintStack.ShowHint(player, hint, _duration, category: HintCategory.Custom, showBullet: false);
                 }
             }
         }

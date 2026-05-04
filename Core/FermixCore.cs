@@ -124,6 +124,15 @@ namespace FermixAPI.Core
                 // Инициализируем планировщик задач
                 FermixScheduler.Initialize();
 
+                // Запускаем стек хинтов, SSS-биндинги и кастом-подсветку
+                FermixHintStack.Initialize();
+                Systems.FermixInput.Initialize();
+                Systems.FermixGlow.Initialize();
+
+                // Монитор TPS + сброс кулдауна воскрешения на старте раунда
+                Commands.TpsCommand.StartMonitor();
+                FermixEvents.OnRoundStart += OnRoundStartedHook;
+
                 IsInitialized = true;
 
                 FermixLog.Info($"Ядро FermixAPI v{Version} успешно инициализировано.");
@@ -152,6 +161,13 @@ namespace FermixAPI.Core
 
                 // Отписываемся от событий
                 FermixEvents.Unregister();
+
+                // Останавливаем стек хинтов, SSS-биндинги и подсветку
+                FermixEvents.OnRoundStart -= OnRoundStartedHook;
+                Commands.TpsCommand.StopMonitor();
+                Systems.FermixGlow.Shutdown();
+                Systems.FermixInput.Shutdown();
+                FermixHintStack.Shutdown();
 
                 // Останавливаем планировщик
                 FermixScheduler.Shutdown();
@@ -185,6 +201,14 @@ namespace FermixAPI.Core
             Integration.LabApiIntegration.Initialize();
             IsLabAPIAvailable = Integration.LabApiIntegration.IsAvailable
                                 || plugins.Any(p => p.Name.Contains("LabAPI") || p.Name.Contains("Lab API"));
+        }
+
+        /// <summary>
+        /// Обработчик старта раунда — сбрасывает кулдауны воскрешения.
+        /// </summary>
+        private static void OnRoundStartedHook()
+        {
+            Commands.ResurrectCommand.ResetCooldowns();
         }
 
         /// <summary>
