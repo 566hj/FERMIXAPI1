@@ -1,0 +1,311 @@
+using System;
+using System.Linq;
+using System.Collections.Generic;
+using Exiled.API.Features;
+using Exiled.API.Interfaces;
+using MEC;
+using Handlers = Exiled.Events.Handlers;
+
+// Alias to avoid ambiguity
+using FermixPlugin = FermixAPI.Plugin;
+
+namespace FermixAPI.Core
+{
+    /// <summary>
+    /// Центральное ядро FermixAPI.
+    /// Управляет инициализацией, зависимостями и жизненным циклом API.
+    /// </summary>
+    public static class FermixCore
+    {
+        #region Version Info
+
+        public const int VersionMajor = 2;
+        public const int VersionMinor = 1;
+        public const int VersionPatch = 0;
+        public const string VersionSuffix = "release";
+
+        /// <summary>
+        /// Минимальная требуемая версия EXILED.
+        /// </summary>
+        public static readonly Version MinimumExiledVersion = new Version(9, 13, 3);
+
+        /// <summary>
+        /// Минимальная требуемая версия LabAPI.
+        /// </summary>
+        public static readonly Version MinimumLabApiVersion = new Version(1, 1, 6);
+
+        /// <summary>
+        /// Полная строка версии API.
+        /// </summary>
+        public static string Version => $"{VersionMajor}.{VersionMinor}.{VersionPatch}-{VersionSuffix}";
+
+        #endregion
+
+        #region State
+
+        /// <summary>
+        /// Ссылка на экземпляр плагина.
+        /// </summary>
+        public static FermixPlugin PluginInstance { get; private set; }
+
+        /// <summary>
+        /// Конфигурация API.
+        /// </summary>
+        public static Config Config => PluginInstance?.Config;
+
+        /// <summary>
+        /// Инициализировано ли ядро.
+        /// </summary>
+        public static bool IsInitialized { get; private set; }
+
+        /// <summary>
+        /// Активные корутины API.
+        /// </summary>
+        private static readonly List<CoroutineHandle> _activeCoroutines = new List<CoroutineHandle>();
+
+        #endregion
+
+        #region Dependencies
+
+        /// <summary>
+        /// Доступен ли HintServiceMeow.
+        /// </summary>
+        public static bool IsHintServiceMeowAvailable { get; private set; }
+
+        /// <summary>
+        /// Доступен ли LabAPI.
+        /// </summary>
+        public static bool IsLabAPIAvailable { get; private set; }
+
+        /// <summary>
+        /// Доступен ли MapEditorReborn.
+        /// </summary>
+        public static bool IsMapEditorRebornAvailable { get; private set; }
+
+        /// <summary>
+        /// Доступен ли SCPStats.
+        /// </summary>
+        public static bool IsSCPStatsAvailable { get; private set; }
+
+        /// <summary>
+        /// Доступен ли RespawnTimer.
+        /// </summary>
+        public static bool IsRespawnTimerAvailable { get; private set; }
+
+        #endregion
+
+        #region Initialization
+
+        /// <summary>
+        /// Инициализация ядра FermixAPI.
+        /// </summary>
+        /// <param name="plugin">Экземпляр плагина</param>
+        public static void Initialize(FermixPlugin plugin)
+        {
+            if (IsInitialized)
+            {
+                FermixLog.Warn("Ядро уже инициализировано. Пропуск повторной инициализации.");
+                return;
+            }
+
+            PluginInstance = plugin;
+
+            try
+            {
+                // Подписываемся на событие ожидания игроков для вывода логотипа
+                Handlers.Server.WaitingForPlayers += OnWaitingForPlayers;
+
+                // Проверяем зависимости
+                CheckDependencies();
+
+                // Регистрируем события
+                FermixEvents.Register();
+
+                // Инициализируем планировщик задач
+                FermixScheduler.Initialize();
+
+                IsInitialized = true;
+
+                FermixLog.Info($"Ядро FermixAPI v{Version} успешно инициализировано.");
+            }
+            catch (Exception ex)
+            {
+                FermixLog.Error($"Критическая ошибка при инициализации ядра: {ex}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Корректное завершение работы API.
+        /// </summary>
+        public static void Shutdown()
+        {
+            if (!IsInitialized) return;
+
+            try
+            {
+                // Отписываемся от событий сервера
+                Handlers.Server.WaitingForPlayers -= OnWaitingForPlayers;
+
+                // Останавливаем все корутины
+                StopAllCoroutines();
+
+                // Отписываемся от событий
+                FermixEvents.Unregister();
+
+                // Останавливаем планировщик
+                FermixScheduler.Shutdown();
+
+                IsInitialized = false;
+                PluginInstance = null;
+
+                FermixLog.Info("FermixAPI успешно завершил работу.");
+            }
+            catch (Exception ex)
+            {
+                FermixLog.Error($"Ошибка при завершении работы: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// Проверяет наличие зависимостей.
+        /// </summary>
+        private static void CheckDependencies()
+        {
+            var plugins = Exiled.Loader.Loader.Plugins;
+
+            IsHintServiceMeowAvailable = plugins.Any(p => p.Name.Contains("HintServiceMeow"));
+            IsMapEditorRebornAvailable = plugins.Any(p => p.Name.Contains("MapEditorReborn"));
+            IsSCPStatsAvailable = plugins.Any(p => p.Name.Contains("SCPStats"));
+            IsRespawnTimerAvailable = plugins.Any(p => p.Name.Contains("RespawnTimer"));
+
+            // LabAPI обнаруживается по сборке, а не по плагину EXILED:
+            // в актуальных версиях SCP:SL LabAPI грузится отдельным
+            // загрузчиком и в Exiled.Loader.Loader.Plugins может отсутствовать.
+            Integration.LabApiIntegration.Initialize();
+            IsLabAPIAvailable = Integration.LabApiIntegration.IsAvailable
+                                || plugins.Any(p => p.Name.Contains("LabAPI") || p.Name.Contains("Lab API"));
+        }
+
+        /// <summary>
+        /// Обработчик события ожидания игроков.
+        /// </summary>
+        private static void OnWaitingForPlayers()
+        {
+            if (Config?.ShowLogo == true)
+            {
+                FermixLog.DrawLogo();
+            }
+
+            if (Config?.ShowDependencyInfo == true)
+            {
+                LogDependencies();
+            }
+        }
+
+        /// <summary>
+        /// Выводит информацию о зависимостях.
+        /// </summary>
+        private static void LogDependencies()
+        {
+            FermixLog.Info("=== Обнаруженные интеграции ===");
+            FermixLog.Info($"  Минимальная версия EXILED:  {MinimumExiledVersion}");
+            FermixLog.Info($"  Минимальная версия LabAPI:  {MinimumLabApiVersion}");
+
+            LogDependency("HintServiceMeow", IsHintServiceMeowAvailable);
+
+            var labApiVersion = Integration.LabApiIntegration.Version;
+            var labApiSuffix = labApiVersion != null ? $" v{labApiVersion}" : string.Empty;
+            LogDependency($"LabAPI{labApiSuffix}", IsLabAPIAvailable);
+
+            LogDependency("MapEditorReborn", IsMapEditorRebornAvailable);
+            LogDependency("SCPStats", IsSCPStatsAvailable);
+            LogDependency("RespawnTimer", IsRespawnTimerAvailable);
+
+            FermixLog.Success($"FermixAPI v{Version} готов к работе!");
+        }
+
+        private static void LogDependency(string name, bool available)
+        {
+            if (available)
+                FermixLog.Success($"  {name}: АКТИВЕН");
+            else if (Config?.Debug == true)
+                FermixLog.Info($"  {name}: не найден");
+        }
+
+        #endregion
+
+        #region Coroutine Management
+
+        /// <summary>
+        /// Запускает корутину и отслеживает её.
+        /// </summary>
+        public static CoroutineHandle RunCoroutine(IEnumerator<float> coroutine, string tag = null)
+        {
+            var handle = string.IsNullOrEmpty(tag)
+                ? Timing.RunCoroutine(coroutine)
+                : Timing.RunCoroutine(coroutine, tag);
+
+            _activeCoroutines.Add(handle);
+            return handle;
+        }
+
+        /// <summary>
+        /// Останавливает корутину.
+        /// </summary>
+        public static void StopCoroutine(CoroutineHandle handle)
+        {
+            Timing.KillCoroutines(handle);
+            _activeCoroutines.Remove(handle);
+        }
+
+        /// <summary>
+        /// Останавливает все корутины API.
+        /// </summary>
+        public static void StopAllCoroutines()
+        {
+            foreach (var handle in _activeCoroutines)
+            {
+                Timing.KillCoroutines(handle);
+            }
+            _activeCoroutines.Clear();
+        }
+
+        #endregion
+
+        #region Utility Methods
+
+        /// <summary>
+        /// Гарантирует, что API инициализирован.
+        /// </summary>
+        public static void EnsureInitialized()
+        {
+            if (!IsInitialized)
+            {
+                throw new InvalidOperationException("FermixAPI не инициализирован. Убедитесь, что плагин включен.");
+            }
+        }
+
+        /// <summary>
+        /// Проверяет плагин по имени.
+        /// </summary>
+        public static bool IsPluginLoaded(string pluginName)
+        {
+            return Exiled.Loader.Loader.Plugins.Any(p =>
+                p.Name.Equals(pluginName, StringComparison.OrdinalIgnoreCase) ||
+                p.Name.Contains(pluginName));
+        }
+
+        /// <summary>
+        /// Получает плагин по имени.
+        /// </summary>
+        public static IPlugin<IConfig> GetPlugin(string pluginName)
+        {
+            return Exiled.Loader.Loader.Plugins.FirstOrDefault(p =>
+                p.Name.Equals(pluginName, StringComparison.OrdinalIgnoreCase) ||
+                p.Name.Contains(pluginName));
+        }
+
+        #endregion
+    }
+}
