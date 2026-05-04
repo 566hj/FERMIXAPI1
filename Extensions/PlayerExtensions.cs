@@ -618,7 +618,10 @@ namespace FermixAPI
         /// </summary>
         public static Player Cuff(this Player player, Player cuffer = null)
         {
-            player.Cuff(cuffer);
+            if (cuffer != null)
+                player.Handcuff(cuffer);
+            else
+                player.Handcuff();
             return player;
         }
 

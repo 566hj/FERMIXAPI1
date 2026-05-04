@@ -226,9 +226,12 @@ namespace FermixAPI.Systems
                 
                 FermixScheduler.Delay(duration, () =>
                 {
-                    if (scp079 != null && scp079.IsConnected)
+                    // Игрок мог умереть или сменить роль за время задержки —
+                    // повторно резолвим Scp079Role, чтобы не писать в stale-ссылку.
+                    if (scp079 != null && scp079.IsConnected &&
+                        scp079.Role is Exiled.API.Features.Roles.Scp079Role currentRole)
                     {
-                        role.Energy = energy;
+                        currentRole.Energy = energy;
                     }
                 });
                 
