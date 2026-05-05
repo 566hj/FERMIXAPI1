@@ -104,8 +104,10 @@ namespace FermixCoin.Outcomes
                     {
                         if (p == null || !p.IsConnected || !p.IsAlive)
                             return;
-                        // Возвращаем туда, где он был на момент броска.
-                        p.Teleport(origin + Vector3.up * SafeUpOffset);
+                        // Возвращаем туда, где он был на момент броска. origin —
+                        // это уже валидная позиция игрока (ноги), поэтому никакой
+                        // SafeUpOffset не добавляем (иначе 1м падения сверху).
+                        p.Teleport(origin);
                     });
                 }));
 
