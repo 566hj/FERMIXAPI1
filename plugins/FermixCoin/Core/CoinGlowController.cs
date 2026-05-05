@@ -19,12 +19,13 @@ namespace FermixCoin
                 return;
 
             // Common / Uncommon / Rare / Epic / Legendary — статичная подсветка
-            // соответствующего цвета.
-            RegisterRarityGlow(Rarity.Common,    RarityColors.CommonHex,    intensity: 1.0f);
-            RegisterRarityGlow(Rarity.Uncommon,  RarityColors.UncommonHex,  intensity: 1.2f);
-            RegisterRarityGlow(Rarity.Rare,      RarityColors.RareHex,      intensity: 1.4f);
-            RegisterRarityGlow(Rarity.Epic,      RarityColors.EpicHex,      intensity: 1.6f);
-            RegisterRarityGlow(Rarity.Legendary, RarityColors.LegendaryHex, intensity: 1.8f);
+            // соответствующего цвета. Common пониженной интенсивности —
+            // жёлтый сильно слепит и «съедает» силуэт монетки на полу.
+            RegisterRarityGlow(Rarity.Common,    RarityColors.CommonHex,    intensity: 0.55f);
+            RegisterRarityGlow(Rarity.Uncommon,  RarityColors.UncommonHex,  intensity: 0.85f);
+            RegisterRarityGlow(Rarity.Rare,      RarityColors.RareHex,      intensity: 1.00f);
+            RegisterRarityGlow(Rarity.Epic,      RarityColors.EpicHex,      intensity: 1.20f);
+            RegisterRarityGlow(Rarity.Legendary, RarityColors.LegendaryHex, intensity: 1.40f);
 
             // Mythic-радуга специально не регистрируем: монетка с заранее свёрстанным
             // мифическим исходом не существует в обычном пуле — Mythic выпадает
@@ -55,7 +56,7 @@ namespace FermixCoin
                 intensity: intensity,
                 range: 4f,
                 updateInterval: 0.25f,
-                glowInHands: false);
+                glowInHands: true);
             _glowIds.Add(id);
         }
     }

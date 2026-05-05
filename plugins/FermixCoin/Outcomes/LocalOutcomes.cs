@@ -56,16 +56,8 @@ namespace FermixCoin.Outcomes
                     }
                 }));
 
-            sink.Add(new Outcome(
-                id: "F4",
-                name: "Workbench под ногами",
-                rarity: Rarity.Uncommon,
-                message: "Под тобой появился workbench.",
-                comment: "Прокачивай оружие прямо здесь. Если тебя не догонят.",
-                action: p =>
-                {
-                    PrefabHelper.Spawn(PrefabType.WorkstationStructure, p.Position - Vector3.up * 0.5f, Quaternion.identity);
-                }));
+            // F4 (Workbench под ногами) удалён по запросу: слишком ломает экономику
+            // станций прокачки, плюс PrefabHelper-структуры не убираются между раундами.
 
             sink.Add(new Outcome(
                 id: "F5",
