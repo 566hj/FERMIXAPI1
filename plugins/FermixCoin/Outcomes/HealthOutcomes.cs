@@ -46,7 +46,7 @@ namespace FermixCoin.Outcomes
                 rarity: Rarity.Rare,
                 message: "Тебе выпал шотган.",
                 comment: "Помповый или нет — узнаешь по звуку.",
-                weightMultiplier: 0.5f,
+                weightMultiplier: 0.15f,
                 action: p =>
                 {
                     var gun = ShotgunPool[UnityEngine.Random.Range(0, ShotgunPool.Length)];
@@ -74,6 +74,7 @@ namespace FermixCoin.Outcomes
                 rarity: Rarity.Uncommon,
                 message: "Аптечка джентльмена: Medkit + Adrenaline + Painkillers + SCP-500.",
                 comment: "Не используй сразу. Подели на потом.",
+                weightMultiplier: 0.4f,
                 action: p =>
                 {
                     p.AddItem(ItemType.Medkit);
@@ -88,6 +89,7 @@ namespace FermixCoin.Outcomes
                 rarity: Rarity.Uncommon,
                 message: "Тяжёлая броня и 2 HE-гранаты.",
                 comment: "Танк-режим включён. Не подведи.",
+                weightMultiplier: 0.15f,
                 action: p =>
                 {
                     p.AddItem(ItemType.ArmorHeavy);

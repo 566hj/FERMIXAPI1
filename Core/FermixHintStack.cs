@@ -659,15 +659,19 @@ namespace FermixAPI.Core
                         continue;
                     }
 
-                    bool changed = collection.RemoveExpired();
-                    changed |= collection.UpdateDynamicHints();
+                    collection.RemoveExpired();
+                    collection.UpdateDynamicHints();
 
                     if (collection.Count == 0)
                     {
                         (toRemove ??= new List<Player>()).Add(player);
                     }
-                    else if (changed)
+                    else
                     {
+                        // Перерисовываем хинт каждый тик: SCP:SL `player.ShowHint`
+                        // живёт ~1.5 секунды, тик — 0.5 секунды, поэтому без
+                        // регулярного refresh'а хинт «гаснет» через 1.5 сек,
+                        // даже если в коллекции он ещё активен.
                         (toUpdate ??= new HashSet<Player>()).Add(player);
                     }
                 }

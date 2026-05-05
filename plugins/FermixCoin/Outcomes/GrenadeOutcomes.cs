@@ -20,6 +20,7 @@ namespace FermixCoin.Outcomes
                 rarity: Rarity.Rare,
                 message: "ВНИМАНИЕ! Активированная HE-граната у твоих ног!",
                 comment: "У тебя ровно 3 секунды, чтобы извиниться перед командой.",
+                weightMultiplier: 0.15f,
                 action: p =>
                 {
                     var grenade = (ExplosiveGrenade)Item.Create(ItemType.GrenadeHE, p);
@@ -33,6 +34,7 @@ namespace FermixCoin.Outcomes
                 rarity: Rarity.Uncommon,
                 message: "Flash-граната у твоих ног!",
                 comment: "Зажмурься. Сейчас будет дискотека.",
+                weightMultiplier: 0.2f,
                 action: p =>
                 {
                     var grenade = (FlashGrenade)Item.Create(ItemType.GrenadeFlash, p);
@@ -46,6 +48,7 @@ namespace FermixCoin.Outcomes
                 rarity: Rarity.Rare,
                 message: "SCP-018 покатился вокруг тебя.",
                 comment: "Чем дольше летает — тем сильнее бьёт. Удачи.",
+                weightMultiplier: 0.2f,
                 action: p =>
                 {
                     var ball = (Scp018)Item.Create(ItemType.SCP018, p);
@@ -58,6 +61,7 @@ namespace FermixCoin.Outcomes
                 rarity: Rarity.Uncommon,
                 message: "SCP-2176 разбилась рядом!",
                 comment: "Все вокруг на пару секунд оглохли. Включая тебя.",
+                weightMultiplier: 0.25f,
                 action: p =>
                 {
                     var lamp = (Scp2176)Item.Create(ItemType.SCP2176, p);
@@ -70,6 +74,7 @@ namespace FermixCoin.Outcomes
                 rarity: Rarity.Epic,
                 message: "Из ниоткуда пришёл Particle Disruptor!",
                 comment: "Кому-то сейчас будет очень плохо. Возможно, тебе.",
+                weightMultiplier: 0.15f,
                 action: p =>
                 {
                     // Дать игроку сразу заряженный Particle Disruptor (10 сек).
