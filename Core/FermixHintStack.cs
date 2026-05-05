@@ -3,7 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Exiled.API.Features;
+using FermixAPI.Hints.Core.Enum;
+using FermixAPI.Hints.Core.Models.Hints;
+using FermixAPI.Hints.Core.Utilities;
 using MEC;
+using HsmHint = FermixAPI.Hints.Core.Models.Hints.Hint;
 
 namespace FermixAPI.Core
 {
@@ -331,6 +335,19 @@ namespace FermixAPI.Core
         private static readonly Dictionary<Player, PlayerHintCollection> _playerHints
             = new Dictionary<Player, PlayerHintCollection>();
 
+        // Один HSM-хинт на игрока. Им мы управляем единолично — текст обновляется
+        // на месте, чтобы не плодить хинты в HintCollection HSM. PlayerDisplay
+        // (и connection) живут на стороне Hints/, нам достаточно держать
+        // ссылку на наш собственный объект Hint, чтобы менять Text/Hide.
+        private static readonly Dictionary<Player, HsmHint> _hsmHints
+            = new Dictionary<Player, HsmHint>();
+
+        // Идентификатор группы для AddHint(hint, groupName). Используем имя
+        // FermixAPI-сборки, чтобы наш хинт жил в собственной группе и не
+        // конфликтовал с CompatibilityAdaptor (который рисует чужие хинты
+        // под именем их вызывающей сборки).
+        private const string HsmGroupName = "FermixAPI.HintStack";
+
         private static readonly object _lock = new object();
 
         private static CoroutineHandle _updateLoop;
@@ -576,8 +593,7 @@ namespace FermixAPI.Core
             {
                 if (!_playerHints.TryGetValue(player, out var collection)) return;
                 collection.Clear();
-                if (player.IsConnected)
-                    player.ShowHint(string.Empty, 1f);
+                ClearForPlayer(player);
             }
         }
 
@@ -590,8 +606,7 @@ namespace FermixAPI.Core
             {
                 foreach (var p in _playerHints.Keys.ToList())
                 {
-                    if (p != null && p.IsConnected)
-                        p.ShowHint(string.Empty, 1f);
+                    RemoveFromPlayer(p);
                 }
                 _playerHints.Clear();
             }
@@ -668,10 +683,11 @@ namespace FermixAPI.Core
                     }
                     else
                     {
-                        // Перерисовываем хинт каждый тик: SCP:SL `player.ShowHint`
-                        // живёт ~1.5 секунды, тик — 0.5 секунды, поэтому без
-                        // регулярного refresh'а хинт «гаснет» через 1.5 сек,
-                        // даже если в коллекции он ещё активен.
+                        // Перерисовываем каждый тик: коллекция могла измениться
+                        // (истёк репит, динамическая функция вернула новый текст),
+                        // поэтому пересобираем строку и пушим её в HSM-хинт.
+                        // Сам HSM держит хинт на экране без таймаута — таймауты
+                        // считаем мы здесь, в HintData.IsExpired / RemoveExpired.
                         (toUpdate ??= new HashSet<Player>()).Add(player);
                     }
                 }
@@ -681,8 +697,7 @@ namespace FermixAPI.Core
                     foreach (var p in toRemove)
                     {
                         _playerHints.Remove(p);
-                        if (p != null && p.IsConnected)
-                            p.ShowHint(string.Empty, 1f);
+                        RemoveFromPlayer(p);
                     }
                 }
 
@@ -715,9 +730,76 @@ namespace FermixAPI.Core
         {
             if (player == null || !player.IsConnected) return;
             var display = collection.GetDisplay();
-            // Длительность — большой запас; реальное скрытие управляется циклом обновления
-            // (хинты исчезают, когда коллекция перестраивается).
-            player.ShowHint(string.IsNullOrEmpty(display) ? string.Empty : display, 1.5f);
+            RenderToPlayer(player, display);
+        }
+
+        // Передаёт текст хинта в FermixAPI.Hints (бывший HintServiceMeow):
+        // у нас один HsmHint на игрока, мы только меняем его Text/Hide,
+        // чтобы кооперативно жить с другими плагинами на сервере.
+        private static void RenderToPlayer(Player player, string display)
+        {
+            if (player == null || !player.IsConnected || player.ReferenceHub == null) return;
+
+            // Получаем (или создаём) наш персональный HsmHint для этого игрока.
+            if (!_hsmHints.TryGetValue(player, out var hsmHint))
+            {
+                hsmHint = new HsmHint
+                {
+                    YCoordinate = 700f,
+                    Alignment = HintAlignment.Center,
+                    YCoordinateAlign = HintVerticalAlign.Middle,
+                    SyncSpeed = HintSyncSpeed.Fastest,
+                };
+
+                try
+                {
+                    PlayerDisplay.Get(player.ReferenceHub).AddHint(hsmHint, HsmGroupName);
+                }
+                catch (Exception ex)
+                {
+                    FermixLog.Error($"FermixHintStack.RenderToPlayer add: {ex.Message}");
+                    return;
+                }
+
+                _hsmHints[player] = hsmHint;
+            }
+
+            if (string.IsNullOrEmpty(display))
+            {
+                hsmHint.Hide = true;
+                hsmHint.Text = string.Empty;
+            }
+            else
+            {
+                hsmHint.Text = display;
+                hsmHint.Hide = false;
+            }
+        }
+
+        // Скрывает наш HSM-хинт у игрока — оставляет объект в HintCollection
+        // HSM, но делает невидимым. Используется при ClearAllHints.
+        private static void ClearForPlayer(Player player)
+        {
+            if (player == null) return;
+            if (_hsmHints.TryGetValue(player, out var hsmHint))
+            {
+                hsmHint.Hide = true;
+                hsmHint.Text = string.Empty;
+            }
+        }
+
+        // Полностью убирает наш HSM-хинт у игрока (вызывается при отключении
+        // и при Shutdown). Сам PlayerDisplay HSM удалит при Player.Left,
+        // нам важно не держать на него ссылку.
+        private static void RemoveFromPlayer(Player player)
+        {
+            if (player == null) return;
+            if (_hsmHints.TryGetValue(player, out var hsmHint))
+            {
+                hsmHint.Hide = true;
+                hsmHint.Text = string.Empty;
+                _hsmHints.Remove(player);
+            }
         }
 
         private static string DefaultColor(HintCategory category) => category switch

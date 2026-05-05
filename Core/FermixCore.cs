@@ -20,7 +20,7 @@ namespace FermixAPI.Core
         #region Version Info
 
         public const int VersionMajor = 2;
-        public const int VersionMinor = 1;
+        public const int VersionMinor = 3;
         public const int VersionPatch = 0;
         public const string VersionSuffix = "release";
 
@@ -118,7 +118,11 @@ namespace FermixAPI.Core
                 Utils.FermixData.Initialize();
 
                 // Подписываемся на событие ожидания игроков для вывода логотипа
+                // и инициализации движка хинтов (FermixAPI.Hints).
                 Handlers.Server.WaitingForPlayers += OnWaitingForPlayers;
+
+                // На уход игрока — освобождаем его PlayerDisplay в hint-движке.
+                Handlers.Player.Left += OnPlayerLeft;
 
                 // Проверяем зависимости
                 CheckDependencies();
@@ -160,6 +164,19 @@ namespace FermixAPI.Core
             {
                 // Отписываемся от событий сервера
                 Handlers.Server.WaitingForPlayers -= OnWaitingForPlayers;
+                Handlers.Player.Left -= OnPlayerLeft;
+
+                // Снимаем все Harmony-патчи hint-движка, чтобы при reload'е
+                // плагина не остаться с битыми ссылками внутри Exiled.API.
+                try
+                {
+                    FermixAPI.Hints.Core.Utilities.Patch.Patcher.Unpatch();
+                    IsHintEnginePatched = false;
+                }
+                catch (Exception ex)
+                {
+                    FermixLog.Warn($"Не удалось снять патчи hint-движка: {ex.Message}");
+                }
 
                 // Останавливаем все корутины
                 StopAllCoroutines();
@@ -220,11 +237,33 @@ namespace FermixAPI.Core
             Commands.ResurrectCommand.ResetCooldowns();
         }
 
+        // Считаем, что патчи hint-движка применены — нужно для корректного
+        // снятия в Shutdown и для проверки в логах. Повторный Patcher.Patch()
+        // безопасен (он сам делает Unpatch перед Patch).
+        /// <summary>
+        /// Применены ли Harmony-патчи hint-движка (FermixAPI.Hints).
+        /// </summary>
+        public static bool IsHintEnginePatched { get; private set; }
+
         /// <summary>
         /// Обработчик события ожидания игроков.
         /// </summary>
         private static void OnWaitingForPlayers()
         {
+            // Patcher hint-движка должен быть применён ДО первого вызова
+            // player.ShowHint в раунде, иначе мы пропустим первые хинты
+            // (стартовые spawn-сообщения и т.п.). WaitingForPlayers — самое
+            // раннее серверное событие, на котором всё уже инициализировано.
+            try
+            {
+                FermixAPI.Hints.Core.Utilities.Patch.Patcher.Patch();
+                IsHintEnginePatched = true;
+            }
+            catch (Exception ex)
+            {
+                FermixLog.Error($"Не удалось применить Harmony-патчи hint-движка: {ex}");
+            }
+
             if (Config?.ShowLogo == true)
             {
                 FermixLog.DrawLogo();
@@ -233,6 +272,22 @@ namespace FermixAPI.Core
             if (Config?.ShowDependencyInfo == true)
             {
                 LogDependencies();
+            }
+        }
+
+        /// <summary>
+        /// При уходе игрока освобождаем его PlayerDisplay у hint-движка,
+        /// чтобы не утекали ссылки на ReferenceHub после disconnect'а.
+        /// </summary>
+        private static void OnPlayerLeft(Exiled.Events.EventArgs.Player.LeftEventArgs ev)
+        {
+            try
+            {
+                FermixAPI.Hints.Core.Utilities.PlayerDisplay.Destruct(ev?.Player?.ReferenceHub);
+            }
+            catch (Exception ex)
+            {
+                FermixLog.Warn($"PlayerDisplay.Destruct: {ex.Message}");
             }
         }
 
