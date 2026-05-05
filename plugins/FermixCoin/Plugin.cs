@@ -20,7 +20,7 @@ namespace FermixCoin
         public override string Name => "FermixCoin";
         public override string Prefix => "fermix_coin";
         public override string Author => "Fermix";
-        public override Version Version { get; } = new Version(1, 0, 0);
+        public override Version Version { get; } = new Version(1, 1, 0);
         public override Version RequiredExiledVersion { get; } = new Version(9, 13, 3);
         public override PluginPriority Priority => PluginPriority.Lower;
 

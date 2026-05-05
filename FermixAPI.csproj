@@ -7,10 +7,12 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>FermixAPI</AssemblyName>
     <RootNamespace>FermixAPI</RootNamespace>
-    <Version>2.1.0</Version>
+    <Version>2.3.0</Version>
     <Authors>Fermix</Authors>
     <Description>Advanced API for Exiled (9.13.x) with LabAPI (1.1.x) integration</Description>
-    <NoWarn>CS1591;CS1573;CS0618</NoWarn>
+    <NoWarn>CS1591;CS1573;CS0618;CS8632;CS1998</NoWarn>
+    <!-- Hints/ source originated from HintServiceMeow (MIT) and uses #if EXILED -->
+    <DefineConstants>$(DefineConstants);EXILED</DefineConstants>
   </PropertyGroup>
 
   <!--
@@ -96,11 +98,34 @@
       <HintPath>$(FERMIX_REFERENCES)\LabApi.dll</HintPath>
       <Private>false</Private>
     </Reference>
+
+    <!-- Lib.Harmony — нужен для движка хинтов (Hints/), который патчит
+         нативный pipeline ShowHint / SendHint, чтобы кооперативно делить
+         экран с другими плагинами. EXILED грузит 0Harmony.dll сам. -->
+    <Reference Include="0Harmony">
+      <HintPath>$(FERMIX_REFERENCES)\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- System.IO.Compression — нужен для распаковки TextWidth-таблицы
+         в Hints/Core/Utilities/Tools/FontTool.cs. Не входит в стандартный
+         net48 GAC по умолчанию. -->
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="YamlDotNet" Version="13.7.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <!-- Hints/TextWidth — таблица ширин символов TextMeshPro, нужна движку
+       хинтов для точного позиционирования. Грузится через
+       Assembly.GetManifestResourceStream("FermixAPI.Hints.TextWidth"). -->
+  <ItemGroup>
+    <EmbeddedResource Include="Hints\TextWidth">
+      <LogicalName>FermixAPI.Hints.TextWidth</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <!-- examples/ — справочные сэмплы для пользователей API; не часть FermixAPI.dll -->
