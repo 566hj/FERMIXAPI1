@@ -337,7 +337,7 @@ namespace FermixAPI.Core
 
         // Один HSM-хинт на игрока. Им мы управляем единолично — текст обновляется
         // на месте, чтобы не плодить хинты в HintCollection HSM. PlayerDisplay
-        // (и connection) живут на стороне Hints/, нам достаточно держать
+        // (и connection) живут на стороне Internal/HintEngine/, нам достаточно держать
         // ссылку на наш собственный объект Hint, чтобы менять Text/Hide.
         private static readonly Dictionary<Player, HsmHint> _hsmHints
             = new Dictionary<Player, HsmHint>();

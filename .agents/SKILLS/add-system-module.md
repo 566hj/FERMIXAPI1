@@ -129,7 +129,7 @@ disconnect'е игрока остаются висящие ссылки → memo
 
 ### 7. Если модуль использует Harmony-патчи
 
-См. как сделано в `Hints/Core/Utilities/Patch/Patcher.cs`. Главное —
+См. как сделано в `Internal/HintEngine/Core/Utilities/Patch/Patcher.cs`. Главное —
 не патчить в `Initialize` (плагины ещё подгружаются), а на
 `WaitingForPlayers`. Снимать патчи в `Shutdown`.
 

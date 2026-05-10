@@ -176,26 +176,9 @@ namespace FermixAPI.Utils
             return $"{ProgressBar(value, max, length)} {percent:F0}%";
         }
         
-        /// <summary>
-        /// Colorize text для Unity Rich Text
-        /// </summary>
-        public static string Colorize(string text, string color) => $"<color={color}>{text}</color>";
-        
-        /// <summary>
-        /// Bold text
-        /// </summary>
-        public static string Bold(string text) => $"<b>{text}</b>";
-        
-        /// <summary>
-        /// Italic text
-        /// </summary>
-        public static string Italic(string text) => $"<i>{text}</i>";
-        
-        /// <summary>
-        /// Установить размер текста
-        /// </summary>
-        public static string Size(string text, int size) => $"<size={size}>{text}</size>";
-        
+        // RichText-форматирование (color/bold/italic/size) живёт в
+        // FermixAPI.FermixHint.* — здесь дубликаты не держим.
+
         #endregion
         
         #region Цветовые утилиты

@@ -137,25 +137,22 @@ namespace FermixAPI.Systems
         #endregion
 
         #region Global Hints & Messages - Глобальные Сообщения
+        //
+        // Hint-методы идут через FermixHint -> FermixHintStack, чтобы не биться
+        // с другими хинтами (Harmony-патч в Internal/HintEngine/ всё равно бы
+        // подхватил player.ShowHint, но это обход — зовём FermixHint сразу).
 
         /// <summary>
         /// Отправляет хинт всем игрокам.
         /// </summary>
         public static void GlobalHint(string message, float duration = 5f)
-        {
-            foreach (var player in Player.List)
-            {
-                player.ShowHint(message, duration);
-            }
-        }
+            => FermixHint.SendToAll(message, duration);
 
         /// <summary>
         /// Отправляет цветной хинт всем игрокам.
         /// </summary>
         public static void GlobalColorHint(string message, string color, float duration = 5f)
-        {
-            GlobalHint($"<color={color}>{message}</color>", duration);
-        }
+            => FermixHint.SendToAllColored(message, color, duration);
 
         /// <summary>
         /// Отправляет broadcast всем игрокам.
@@ -188,34 +185,19 @@ namespace FermixAPI.Systems
         /// Отправляет хинт игрокам стороны.
         /// </summary>
         public static void HintToSide(Side side, string message, float duration = 5f)
-        {
-            foreach (var player in GetBySide(side))
-            {
-                player.ShowHint(message, duration);
-            }
-        }
+            => FermixHint.SendWhere(p => p.Role.Side == side, message, duration);
 
         /// <summary>
         /// Отправляет хинт игрокам команды.
         /// </summary>
         public static void HintToTeam(Team team, string message, float duration = 5f)
-        {
-            foreach (var player in GetByTeam(team))
-            {
-                player.ShowHint(message, duration);
-            }
-        }
+            => FermixHint.SendWhere(p => p.Role.Team == team, message, duration);
 
         /// <summary>
         /// Отправляет хинт по условию.
         /// </summary>
         public static void HintWhere(Func<Player, bool> predicate, string message, float duration = 5f)
-        {
-            foreach (var player in Player.List.Where(predicate))
-            {
-                player.ShowHint(message, duration);
-            }
-        }
+            => FermixHint.SendWhere(predicate, message, duration);
 
         #endregion
 
