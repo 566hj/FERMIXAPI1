@@ -1,0 +1,46 @@
+using System.Linq;
+using Corwarx_Project.Core.Features.ModuleSystem.Atributies;
+using Corwarx_Project.Features.ModuleSystem.BaseClass;
+using Corwarx_Project.Features.RoleSystem.Managers;
+using Exiled.API.Enums;
+using Exiled.API.Extensions;
+using Exiled.API.Features;
+using Exiled.Events.EventArgs.Player;
+using PlayerRoles;
+
+namespace Corwarx_Project.Modules {
+    [LoadModule]
+    public class RoleManager : ModuleBase {
+        public override void OnEnable() {
+            Exiled.Events.Handlers.Player.Left += OnDisconnect;
+            Exiled.Events.Handlers.Server.RoundStarted += OnStartRound;
+            Exiled.Events.Handlers.Player.Died += OnDie;
+            base.OnEnable();
+        }
+
+        public override void OnDisable() {
+            Exiled.Events.Handlers.Player.Left -= OnDisconnect;
+            Exiled.Events.Handlers.Server.RoundStarted -= OnStartRound;
+            Exiled.Events.Handlers.Player.Died -= OnDie;
+            base.OnDisable();
+        }
+
+        private void OnDisconnect(LeftEventArgs ev) {
+            ev.Player.RemoveRole();
+        }
+
+        private void OnStartRound() {
+            foreach (Player player in  Player.List) {
+                if (player == null) return;
+           
+                Faction faction = player.Role.Team.GetFaction();
+           
+                SpawnManager.SpawnPlayer(player, SpawnReason.RoundStart, faction);
+            }
+        }
+
+        private void OnDie(DiedEventArgs ev) {
+            ev.Player.RemoveRole();
+        }
+    }
+}

@@ -59,14 +59,13 @@ jobs:
       - name: Fetch EXILED + LabAPI references
         run: bash scripts/fetch-references.sh
 
-      - name: Copy SCP:SL game DLLs into refs/
+      - name: Copy SCP:SL game DLLs into libs/
         run: |
-          mkdir -p refs
-          cp "$HOME/scpsl_server/SCPSL_Data/Managed/"*.dll refs/
-          ls -1 refs/ | head -40
+          cp "$HOME/scpsl_server/SCPSL_Data/Managed/"*.dll libs/
+          ls -1 libs/ | head -40
 
       - name: Restore + Build (FermixAPI)
-        run: dotnet build FermixAPI.csproj -c Release
+        run: dotnet build FermixAPI/FermixAPI.csproj -c Release
 
       - name: Restore + Build (FermixCoin plugin)
         run: dotnet build plugins/FermixCoin/FermixCoin.csproj -c Release
@@ -76,8 +75,8 @@ jobs:
         with:
           name: FermixAPI
           path: |
-            bin/Release/net48/FermixAPI.dll
-            bin/Release/net48/FermixAPI.pdb
+            FermixAPI/bin/Release/net48/FermixAPI.dll
+            FermixAPI/bin/Release/net48/FermixAPI.pdb
 
       - name: Upload build artifact (FermixCoin)
         uses: actions/upload-artifact@v4
@@ -93,8 +92,8 @@ jobs:
           VERSION="${GITHUB_REF_NAME}"
           STAGE="artifact/FermixAPI"
           mkdir -p "$STAGE"
-          cp bin/Release/net48/FermixAPI.dll "$STAGE/"
-          cp bin/Release/net48/FermixAPI.pdb "$STAGE/"
+          cp FermixAPI/bin/Release/net48/FermixAPI.dll "$STAGE/"
+          cp FermixAPI/bin/Release/net48/FermixAPI.pdb "$STAGE/"
           cp plugins/FermixCoin/bin/Release/FermixCoin.dll "$STAGE/"
           cp plugins/FermixCoin/bin/Release/FermixCoin.pdb "$STAGE/"
           cp README.md "$STAGE/"
@@ -107,8 +106,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            bin/Release/net48/FermixAPI.dll
-            bin/Release/net48/FermixAPI.pdb
+            FermixAPI/bin/Release/net48/FermixAPI.dll
+            FermixAPI/bin/Release/net48/FermixAPI.pdb
             plugins/FermixCoin/bin/Release/FermixCoin.dll
             plugins/FermixCoin/bin/Release/FermixCoin.pdb
             FermixAPI-${{ github.ref_name }}.zip
