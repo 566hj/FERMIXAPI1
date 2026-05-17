@@ -11,7 +11,7 @@ EXILED_TAG="${1:-v9.13.3}"
 LABAPI_VERSION="${2:-1.1.6}"
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-REFS_DIR="$REPO_ROOT/libs"
+REFS_DIR="$REPO_ROOT/refs"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 

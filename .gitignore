@@ -13,10 +13,9 @@ obj/
 # Rider
 .idea/
 
-# Reference DLLs (old location — no longer used)
+# Reference DLLs (downloaded by build script — do not commit)
 refs/
-
-# Build artifacts (but NOT libs/ — shared DLLs are tracked)
+*.dll
 *.pdb
 *.mdb
 
