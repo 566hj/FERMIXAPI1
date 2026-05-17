@@ -11,7 +11,7 @@
 предыдущий — побеждает последний.
 
 **Решение (применено в v2.3.0):** мы **встроили HSM прямо в FermixAPI**.
-Источники в `Hints/`, атрибуция в `vendor/HintServiceMeow/`. На
+Источники в `Internal/HintEngine/`, атрибуция в `vendor/HintServiceMeow/`. На
 WaitingForPlayers вызываем `Patcher.Patch()` — все вызовы
 `Player.ShowHint` / `LabApi.Player.SendHint` (от любого плагина)
 теперь идут через наш кооперативный pipeline.
@@ -80,9 +80,9 @@ RoleSpawnFlags.None)`.
 
 **Решение:** инлайн после `Role.Set(...)`, не через event handler.
 
-## Hints/UI/CommonHint — не используем
+## Internal/HintEngine/UI/CommonHint — не используем
 
-**Не путать:** В `Hints/UI/Utilities/CommonHint.cs` есть готовые
+**Не путать:** В `Internal/HintEngine/UI/Utilities/CommonHint.cs` есть готовые
 helpers для item-pickup hints, role hints и т.п. Это API из
 HintServiceMeow. Мы их **не используем**, потому что у нас своя
 семантика хинтов через `FermixHintStack`. Но код оставлен (а не
@@ -108,18 +108,18 @@ spawned'ы там.
 ## YamlDotNet версия
 
 **Симптом:** YamlDotNet `13.7.1` (наш) ниже, чем в самом upstream
-HintServiceMeow (`16.3.0`). Если кто-нибудь добавит в `Hints/` код,
+HintServiceMeow (`16.3.0`). Если кто-нибудь добавит в `Internal/HintEngine/` код,
 использующий новые API YamlDotNet — построит, но рантайм может
 упасть.
 
-**Решение:** пока всё ОК, потому что код в `Hints/` использует
-только базовые классы. Если будешь обновлять `Hints/` с upstream —
+**Решение:** пока всё ОК, потому что код в `Internal/HintEngine/` использует
+только базовые классы. Если будешь обновлять `Internal/HintEngine/` с upstream —
 сравни вызовы YamlDotNet и при необходимости подними версию в
 `FermixAPI.csproj`.
 
 ## net48 и `System.IO.Compression`
 
-**Симптом:** при сборке `Hints/Core/Utilities/Tools/FontTool.cs`
+**Симптом:** при сборке `Internal/HintEngine/Core/Utilities/Tools/FontTool.cs`
 падает с `error CS1069: ZipArchive forwarded to System.IO.Compression`.
 
 **Причина:** на target framework `net48` ZipArchive не подхватывается
@@ -128,10 +128,10 @@ HintServiceMeow (`16.3.0`). Если кто-нибудь добавит в `Hint
 **Решение (применено):** в `FermixAPI.csproj` добавлено
 `<Reference Include="System.IO.Compression" />` и `System.IO.Compression.FileSystem`.
 
-## global::Hints в коде Hints/
+## global::Hints в коде Internal/HintEngine/
 
 **Симптом:** компилятор не находит `Hint`, `HintDisplay`, `HintEffect`,
-`TextHint` внутри файлов в `Hints/`.
+`TextHint` внутри файлов в `Internal/HintEngine/`.
 
 **Причина:** наш namespace `FermixAPI.Hints` shadow'ит нативный
 `global::Hints` (от SCP:SL). Когда в файле, лежащем в
@@ -139,8 +139,8 @@ HintServiceMeow (`16.3.0`). Если кто-нибудь добавит в `Hint
 `using Hints;`, компилятор сначала ищет в нашем namespace, а только
 потом во внешнем.
 
-**Решение:** в файлах `Hints/Core/Utilities/Patch/Patches.cs`,
+**Решение:** в файлах `Internal/HintEngine/Core/Utilities/Patch/Patches.cs`,
 `Patcher.cs`, `UnityAdaptors/ScpslDisplayOutput.cs` обращения к
 SCP:SL'овскому `Hints.X` заменены на `global::Hints.X`. Если
-будешь добавлять новые файлы в `Hints/`, которые работают с native
+будешь добавлять новые файлы в `Internal/HintEngine/`, которые работают с native
 типами — следуй той же конвенции.

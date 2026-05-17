@@ -1,8 +1,8 @@
-# `Hints/` — встроенный hint-движок FermixAPI
+# `Internal/HintEngine/` — встроенный hint-движок FermixAPI
 
 Этот каталог — встроенный движок отображения хинтов на экране игрока.
 Он происходит из проекта [HintServiceMeow](https://github.com/MeowServer/HintServiceMeow)
-(MIT, см. [`vendor/HintServiceMeow/`](../vendor/HintServiceMeow/README.md)),
+(MIT, см. [`vendor/HintServiceMeow/`](../../vendor/HintServiceMeow/README.md)),
 но включён в FermixAPI как первоклассная часть API: namespace'ы
 переименованы в `FermixAPI.Hints.*`, и публичная точка входа для
 плагинов-потребителей — обычный `FermixAPI.FermixHint`.
@@ -44,12 +44,12 @@ HintServiceMeow решает эту проблему через Harmony-патч
 
 | Где | Что делается |
 | --- | --- |
-| [`Core/FermixCore.cs::OnWaitingForPlayers`](../Core/FermixCore.cs) | Вызывает `Patcher.Patch()`, чтобы Harmony перехватил `Player.ShowHint`. |
-| [`Core/FermixCore.cs::OnPlayerLeft`](../Core/FermixCore.cs) | Вызывает `PlayerDisplay.Destruct(hub)` для освобождения per-player состояния. |
-| [`Core/FermixCore.cs::Shutdown`](../Core/FermixCore.cs) | Вызывает `Patcher.Unpatch()` при выгрузке плагина. |
-| [`Core/FermixHintStack.cs::RenderToPlayer`](../Core/FermixHintStack.cs) | Создаёт ровно один `Hints/Core/Models/Hints/Hint` на игрока и обновляет его `.Text` / `.Hide` (вместо `player.ShowHint`). |
+| [`Core/FermixCore.cs::OnWaitingForPlayers`](../../Core/FermixCore.cs) | Вызывает `Patcher.Patch()`, чтобы Harmony перехватил `Player.ShowHint`. |
+| [`Core/FermixCore.cs::OnPlayerLeft`](../../Core/FermixCore.cs) | Вызывает `PlayerDisplay.Destruct(hub)` для освобождения per-player состояния. |
+| [`Core/FermixCore.cs::Shutdown`](../../Core/FermixCore.cs) | Вызывает `Patcher.Unpatch()` при выгрузке плагина. |
+| [`Core/FermixHintStack.cs::RenderToPlayer`](../../Core/FermixHintStack.cs) | Создаёт ровно один `Internal/HintEngine/Core/Models/Hints/Hint` на игрока и обновляет его `.Text` / `.Hide` (вместо `player.ShowHint`). |
 
-`Hints/Plugin/Plugin.cs` и `PluginConfig.cs` — это **не** EXILED-плагин,
+`Internal/HintEngine/Plugin/Plugin.cs` и `PluginConfig.cs` — это **не** EXILED-плагин,
 а простой синглтон-контейнер для конфига, нужный заимствованному коду
 (`Plugin.Instance.Config.X`). Реальный жизненный цикл движка
 управляется из `FermixCore`.
@@ -58,17 +58,17 @@ HintServiceMeow решает эту проблему через Harmony-патч
 
 1. Скачать новый релиз HintServiceMeow с GitHub.
 2. Распаковать в `/tmp/hsm/`.
-3. `rsync -a /tmp/hsm/HintServiceMeow-main/HintServiceMeow/Core/ Hints/Core/`
+3. `rsync -a /tmp/hsm/HintServiceMeow-main/HintServiceMeow/Core/ Internal/HintEngine/Core/`
    (и аналогично для `UI/`, `TextWidth`). **Не** копировать `Plugin/`,
    `Properties/`, `HintServiceMeow.csproj`.
-4. `find Hints/ -name '*.cs' -exec sed -i 's/HintServiceMeow\./FermixAPI.Hints./g' {} +`
+4. `find Internal/HintEngine/ -name '*.cs' -exec sed -i 's/HintServiceMeow\./FermixAPI.Hints./g' {} +`
 5. В `Patches.cs`, `Patcher.cs`, `ScpslDisplayOutput.cs` — заменить
    обращения к нативному `Hints.X` на `global::Hints.X` (иначе
    компилятор ловит наш `FermixAPI.Hints` и падает с CS0246).
-6. Обновить версию и дату в [`vendor/HintServiceMeow/README.md`](../vendor/HintServiceMeow/README.md).
+6. Обновить версию и дату в [`vendor/HintServiceMeow/README.md`](../../vendor/HintServiceMeow/README.md).
 7. Собрать `dotnet build -c Release` — должно быть 0 errors / 0 warnings.
 
 ## Лицензия
 
 Код в этом каталоге лицензирован по MIT, как и оригинальный
-HintServiceMeow. Полный текст — в [`vendor/HintServiceMeow/LICENSE`](../vendor/HintServiceMeow/LICENSE).
+HintServiceMeow. Полный текст — в [`vendor/HintServiceMeow/LICENSE`](../../vendor/HintServiceMeow/LICENSE).

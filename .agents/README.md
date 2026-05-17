@@ -27,7 +27,7 @@ FermixAPI / FermixCoin вместо текущего ассистента (Devin
    - [`add-system-module.md`](SKILLS/add-system-module.md) — как
      завести новый System-модуль в FermixAPI.
    - [`update-hint-engine.md`](SKILLS/update-hint-engine.md) — как
-     перетянуть свежую версию HintServiceMeow в `Hints/`.
+     перетянуть свежую версию HintServiceMeow в `Internal/HintEngine/`.
    - [`release-checklist.md`](SKILLS/release-checklist.md) — как
      выпустить новую версию (тэг + Release).
 

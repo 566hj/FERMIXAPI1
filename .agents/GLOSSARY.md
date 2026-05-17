@@ -17,7 +17,7 @@
 - **CommonHint** — UI-helper из заимствованного HSM. **Мы его
   сейчас не используем напрямую**: API `FermixHint` ходит через
   `FermixHintStack`, который рендерит свой `Hint` в pipeline.
-  Оставлен в `Hints/UI/` ради бинарной совместимости с upstream.
+  Оставлен в `Internal/HintEngine/UI/` ради бинарной совместимости с upstream.
 
 ## D
 
@@ -47,7 +47,7 @@
   через нативный `player.ShowHint`.
 - **FermixHintStack** — внутренняя реализация стека хинтов. На
   каждый тик (0.5 с) ремоунтит коллекцию активных хинтов в один
-  HsmHint и пушит его в `Hints/Core/Utilities/PlayerDisplay`.
+  HsmHint и пушит его в `Internal/HintEngine/Core/Utilities/PlayerDisplay`.
 - **FermixScheduler** — планировщик отложенных задач.
   `Delay`/`Repeat`/`Countdown`. Сам очищает таски при reload.
 
@@ -55,11 +55,11 @@
 
 - **Harmony (Lib.Harmony)** — runtime patcher для .NET, позволяет
   «подменять» методы в чужих сборках. У нас используется только
-  внутри `Hints/Core/Utilities/Patch/Patcher.cs` для перехвата
+  внутри `Internal/HintEngine/Core/Utilities/Patch/Patcher.cs` для перехвата
   `Player.ShowHint`. Сам EXILED грузит `0Harmony.dll` в рантайме.
 - **HintServiceMeow (HSM)** — сторонний hint-движок, MIT, ~500 КБ.
   В FermixAPI 2.3.0+ его исходники **встроены** в каталог
-  `Hints/` под нашим namespace `FermixAPI.Hints.*`. Атрибуция —
+  `Internal/HintEngine/` под нашим namespace `FermixAPI.Hints.*`. Атрибуция —
   в `vendor/HintServiceMeow/`.
 
 ## I
@@ -121,7 +121,7 @@
 
 ## T
 
-- **TextWidth** — ZIP-файл в `Hints/TextWidth`, embedded resource
+- **TextWidth** — ZIP-файл в `Internal/HintEngine/TextWidth`, embedded resource
   с таблицей ширин TextMeshPro-символов. HSM использует его для
   pixel-perfect измерения текста при рендеринге.
 

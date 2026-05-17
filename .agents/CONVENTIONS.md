@@ -62,7 +62,7 @@ FermixHint.SendToAllColored("ВНИМАНИЕ", FermixHint.Yellow, 3f);
 ```
 
 `FermixHint` под капотом пишет в `FermixHintStack`, который пакует
-все активные хинты и пушит их в встроенный hint-движок (`Hints/`).
+все активные хинты и пушит их в встроенный hint-движок (`Internal/HintEngine/`).
 **Не** зови `player.ShowHint(...)` напрямую: даже если на сервере
 других плагинов с HSM нет, наш Harmony-патч всё равно перехватит
 вызов и переадресует — но это лишний overhead, и любой стиль-чек

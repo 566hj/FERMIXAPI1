@@ -24,12 +24,13 @@ FERMIXAPI1/
 ├── Commands/                  ← ResurrectCommand, RoundTimeCommand, TpsCommand, ...
 ├── Integration/               ← LabApiIntegration, LabApiCommands, LabApiEvents
 ├── Utils/                     ← FermixConfigUtils, FermixData, FermixLog
-├── Hints/                     ← ВСТРОЕННЫЙ hint-движок (бывший HintServiceMeow)
-│   ├── Core/                  ← PlayerDisplay, HintCollection, парсер RichText
-│   ├── UI/                    ← CommonHint helpers (не используются в FermixHint)
-│   ├── Plugin/                ← Стабы Plugin/PluginConfig (НЕ EXILED-плагин)
-│   ├── TextWidth              ← embedded-resource с таблицей ширин символов
-│   └── README.md              ← как обновлять движок
+├── Internal/                  ← ВНУТРЕННЯЯ реализация (не входит в публичный API)
+│   └── HintEngine/            ← ВСТРОЕННЫЙ hint-движок (форк HintServiceMeow)
+│       ├── Core/                ← PlayerDisplay, HintCollection, парсер RichText
+│       ├── UI/                  ← CommonHint helpers (не используются в FermixHint)
+│       ├── Plugin/              ← Стабы Plugin/PluginConfig (НЕ EXILED-плагин)
+│       ├── TextWidth            ← embedded-resource с таблицей ширин символов
+│       └── README.md            ← как обновлять движок
 ├── plugins/
 │   └── FermixCoin/            ← отдельный плагин-потребитель FermixAPI
 │       ├── FermixCoin.csproj  ← собирается отдельно
@@ -87,8 +88,8 @@ FermixCoin.Plugin.OnEnabled() → FermixCore.EnsureInitialized()
 
 Чтобы хинты от FermixCoin (и любых других плагинов) гарантированно
 показывались на сервере, FermixAPI **встраивает в себя**
-HintServiceMeow (HSM) — код лежит в [`Hints/`](../Hints/), оригинал —
-в [`vendor/HintServiceMeow/`](../vendor/HintServiceMeow/). HSM
+HintServiceMeow (HSM) — код лежит в [`Internal/HintEngine/`](../Internal/HintEngine/),
+оригинал — в [`vendor/HintServiceMeow/`](../vendor/HintServiceMeow/). HSM
 патчит `player.ShowHint` через Harmony и кооперативно объединяет
 хинты от разных плагинов в один пайплайн рендеринга.
 
@@ -97,11 +98,13 @@ HintServiceMeow (HSM) — код лежит в [`Hints/`](../Hints/), ориги
 - Никогда не зови `player.ShowHint(...)` напрямую — иди через
   `FermixHint.Send(player, msg, dur)` или другой публичный API
   `FermixHint`.
-- Если ты добавляешь hint-логику в `Hints/`, помни: namespace —
-  `FermixAPI.Hints.*`, а не `HintServiceMeow.*`.
+- Если ты добавляешь hint-логику в `Internal/HintEngine/`, помни:
+  namespace — `FermixAPI.Hints.*`, а не `HintServiceMeow.*` (это
+  исторический namespace из форка, сохранённый ради
+  совместимости Harmony-патчей).
 - Чтобы обращаться к нативному SCP:SL `Hints` API в коде внутри
-  `Hints/`, используй явное `global::Hints.X` (иначе компилятор
-  ловит наш `FermixAPI.Hints` и падает с CS0246).
+  `Internal/HintEngine/`, используй явное `global::Hints.X` (иначе
+  компилятор ловит наш `FermixAPI.Hints` и падает с CS0246).
 
 ## Что считать «готово»
 

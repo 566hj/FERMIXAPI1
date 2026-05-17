@@ -91,7 +91,7 @@ mirror connection не готов). Если появился — проблем
 ## Шаг 6 — RichText / парсер ломается
 
 Если хинт показывается, но без цвета / выглядит как сырой текст —
-парсер RichText в `Hints/Core/Utilities/Parser/RichTextParser.cs`
+парсер RichText в `Internal/HintEngine/Core/Utilities/Parser/RichTextParser.cs`
 упал. Чаще всего из-за:
 
 - Несбалансированных тегов (`<color=red>` без `</color>`).

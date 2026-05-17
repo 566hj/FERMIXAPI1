@@ -53,7 +53,7 @@ git checkout dev
 git pull --ff-only
 
 # Делать изменения, коммитить:
-git add Core/FermixCore.cs Hints/...
+git add Core/FermixCore.cs Internal/HintEngine/...
 git commit -m "Краткое описание на русском"
 
 # Перед пушем — убедиться, что собирается:
@@ -132,6 +132,6 @@ Devin Review поймал, что origin — уже валидная позиц�
 ## Когда **обязательно** делать PR
 
 - Любые изменения, попадающие в `.dll` (то есть всё в `FermixAPI/`,
-  `Hints/`, `plugins/`).
+  `Internal/HintEngine/`, `plugins/`).
 - Любые изменения в `.github/workflows/`.
 - Любые изменения структуры репо (новые папки, удаление).

@@ -6,15 +6,16 @@ using Exiled.API.Features;
 using FermixAPI.Core;
 using PlayerRoles;
 using UnityEngine;
-using BroadcastFlags = Exiled.API.Features.Broadcast;
-// Alias to avoid ambiguity with extension method name
-
 
 namespace FermixAPI
 {
     /// <summary>
-    /// Расширенные методы для работы с игроками.
-    /// Обеспечивает быстрый и удобный доступ к часто используемым операциям.
+    /// Публичный fluent-API поверх <see cref="Player"/> — часто используемые операции,
+    /// оформленные как extension'ы для цепочки вызовов (`player.SetRole(...).FullHeal()`).
+    ///
+    /// Hint-методы (Hint / ColorHint / SuccessHint / …) под капотом идут через
+    /// <see cref="FermixHint"/> → <see cref="FermixHintStack"/>, так что они всегда стэкаются
+    /// с другими хинтами и не вызывают <c>player.ShowHint</c> напрямую.
     /// </summary>
     public static class PlayerExtensions
     {
@@ -233,17 +234,6 @@ namespace FermixAPI
         }
 
         /// <summary>
-        /// Телепортирует всех игроков к позиции.
-        /// </summary>
-        public static void TeleportAll(Vector3 position)
-        {
-            foreach (var player in Player.List.Where(p => p.IsAlive()))
-            {
-                player.Position = position;
-            }
-        }
-
-        /// <summary>
         /// Замораживает игрока на месте.
         /// </summary>
         public static Player Freeze(this Player player, float duration = -1f)
@@ -418,13 +408,18 @@ namespace FermixAPI
         #endregion
 
         #region Hints & Messages - Хинты и Сообщения
+        //
+        // Все методы этого региона — тонкие fluent-обёртки над FermixHint.*,
+        // который в свою очередь пишет в FermixHintStack. Прямых вызовов
+        // player.ShowHint() здесь быть НЕ ДОЛЖНО — это обходит стек и
+        // нарушает конвенции (см. .agents/CONVENTIONS.md).
 
         /// <summary>
-        /// Показывает хинт игроку.
+        /// Показывает хинт игроку. Стэкается с другими хинтами.
         /// </summary>
         public static Player Hint(this Player player, string message, float duration = 5f)
         {
-            player.ShowHint(message, duration);
+            FermixHint.Send(player, message, duration);
             return player;
         }
 
@@ -433,7 +428,7 @@ namespace FermixAPI
         /// </summary>
         public static Player ColorHint(this Player player, string message, string color = "white", float duration = 5f)
         {
-            player.ShowHint($"<color={color}>{message}</color>", duration);
+            FermixHint.SendColored(player, message, color, duration);
             return player;
         }
 
@@ -442,7 +437,8 @@ namespace FermixAPI
         /// </summary>
         public static Player SuccessHint(this Player player, string message, float duration = 3f)
         {
-            return player.ColorHint(message, "green", duration);
+            FermixHint.Success(player, message, duration);
+            return player;
         }
 
         /// <summary>
@@ -450,7 +446,8 @@ namespace FermixAPI
         /// </summary>
         public static Player ErrorHint(this Player player, string message, float duration = 3f)
         {
-            return player.ColorHint($"[!] {message}", "red", duration);
+            FermixHint.Error(player, message, duration);
+            return player;
         }
 
         /// <summary>
@@ -458,7 +455,8 @@ namespace FermixAPI
         /// </summary>
         public static Player WarningHint(this Player player, string message, float duration = 3f)
         {
-            return player.ColorHint($"[!] {message}", "yellow", duration);
+            FermixHint.Warning(player, message, duration);
+            return player;
         }
 
         /// <summary>
@@ -466,24 +464,16 @@ namespace FermixAPI
         /// </summary>
         public static Player InfoHint(this Player player, string message, float duration = 3f)
         {
-            return player.ColorHint(message, "cyan", duration);
-        }
-
-        /// <summary>
-        /// Отправляет сообщение в консоль игрока.
-        /// </summary>
-        public static Player Console(this Player player, string message, string color = "white")
-        {
-            player.SendConsoleMessage(message, color);
+            FermixHint.Info(player, message, duration);
             return player;
         }
 
         /// <summary>
-        /// Очищает все broadcast сообщения.
+        /// Отправляет сообщение в консоль игрока (RA console).
         /// </summary>
-        public static Player ClearBroadcasts(this Player player)
+        public static Player Console(this Player player, string message, string color = "white")
         {
-            player.ClearBroadcasts();
+            player.SendConsoleMessage(message, color);
             return player;
         }
 
@@ -739,30 +729,9 @@ namespace FermixAPI
             return Player.List.Where(p => p.IsAlive() && p.Role.Side != player.Role.Side && p.Role.Side != Side.None);
         }
 
-        /// <summary>
-        /// Получает все SCP на карте.
-        /// </summary>
-        public static IEnumerable<Player> GetAllScps()
-        {
-            return Player.List.Where(p => p.IsScp());
-        }
-
-        /// <summary>
-        /// Получает всех людей на карте.
-        /// </summary>
-        public static IEnumerable<Player> GetAllHumans()
-        {
-            return Player.List.Where(p => p.IsHuman());
-        }
-
-        /// <summary>
-        /// Получает случайного живого игрока.
-        /// </summary>
-        public static Player GetRandomAlive()
-        {
-            var alive = Player.List.Where(p => p.IsAlive()).ToList();
-            return alive.Count > 0 ? alive[UnityEngine.Random.Range(0, alive.Count)] : null;
-        }
+        // Статические выборки (без `this Player`) — типа GetAllScps/GetAllHumans/GetRandomAlive —
+        // живут в FermixAPI.Systems.FermixServer. Здесь оставили только экземплярные
+        // (`this Player`) extension'ы, чтобы PlayerExtensions не дублировал API.
 
         #endregion
 

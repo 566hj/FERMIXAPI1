@@ -36,7 +36,7 @@ ls HintServiceMeow-main/HintServiceMeow/
 
 ```bash
 diff -r /tmp/hsm-update/HintServiceMeow-main/HintServiceMeow/Core/ \
-        /home/ubuntu/repos/FERMIXAPI1/Hints/Core/ | head -80
+        /home/ubuntu/repos/FERMIXAPI1/Internal/HintEngine/Core/ | head -80
 ```
 
 Просмотри изменения. Если новый код добавляет:
@@ -53,12 +53,12 @@ diff -r /tmp/hsm-update/HintServiceMeow-main/HintServiceMeow/Core/ \
 ```bash
 rsync -av --delete \
     /tmp/hsm-update/HintServiceMeow-main/HintServiceMeow/Core/ \
-    /home/ubuntu/repos/FERMIXAPI1/Hints/Core/
+    /home/ubuntu/repos/FERMIXAPI1/Internal/HintEngine/Core/
 rsync -av --delete \
     /tmp/hsm-update/HintServiceMeow-main/HintServiceMeow/UI/ \
-    /home/ubuntu/repos/FERMIXAPI1/Hints/UI/
+    /home/ubuntu/repos/FERMIXAPI1/Internal/HintEngine/UI/
 cp /tmp/hsm-update/HintServiceMeow-main/HintServiceMeow/TextWidth \
-    /home/ubuntu/repos/FERMIXAPI1/Hints/TextWidth
+    /home/ubuntu/repos/FERMIXAPI1/Internal/HintEngine/TextWidth
 ```
 
 ### 4. Переименовать namespaces
@@ -88,13 +88,13 @@ sed -i 's|^    using Hints;|    using global::Hints;|' \
 
 ### 6. Восстановить наши Plugin-стабы
 
-`Hints/Plugin/Plugin.cs` и `Hints/Plugin/PluginConfig.cs` — наши
+`Internal/HintEngine/Plugin/Plugin.cs` и `Internal/HintEngine/Plugin/PluginConfig.cs` — наши
 файлы, не из upstream. Если `rsync` их перетёр (он не должен, мы
 синхронизируем `Core/` и `UI/`, не `Plugin/`) — восстанови из
 `git diff`:
 
 ```bash
-git checkout HEAD -- Hints/Plugin/Plugin.cs Hints/Plugin/PluginConfig.cs
+git checkout HEAD -- Internal/HintEngine/Plugin/Plugin.cs Internal/HintEngine/Plugin/PluginConfig.cs
 ```
 
 ### 7. Собрать
@@ -114,7 +114,7 @@ dotnet build -c Release 2>&1 | tail -30
 - `error CS0103: The name 'Plugin' does not exist` →
   HSM добавил код, использующий `Plugin.Instance.Config.X`, где X —
   поле, которого нет в нашем стабе. Добавь поле в
-  `Hints/Plugin/PluginConfig.cs`.
+  `Internal/HintEngine/Plugin/PluginConfig.cs`.
 
 ### 8. Обновить вендор-метаданные
 
@@ -145,7 +145,7 @@ dotnet build -c Release 2>&1 | tail -30
 - [ ] `Core/` и `UI/` синхронизированы; `Plugin/` НЕ перетёрт
 - [ ] Все `HintServiceMeow.` заменены на `FermixAPI.Hints.`
 - [ ] Все `Hints.X` (нативные) → `global::Hints.X`
-- [ ] `Hints/Plugin/Plugin.cs` и `PluginConfig.cs` на месте
+- [ ] `Internal/HintEngine/Plugin/Plugin.cs` и `PluginConfig.cs` на месте
 - [ ] Если HSM добавил поля в `PluginConfig`, наш стаб их добавил
 - [ ] `dotnet build -c Release` 0/0
 - [ ] `vendor/HintServiceMeow/README.md` обновлён

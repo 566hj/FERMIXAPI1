@@ -68,48 +68,51 @@ dotnet build -c Release
 
 ## Структура проекта
 
+FermixAPI — это **один плагин** с единым публичным API. Корневые
+папки — это разделы API; `Internal/` — внутренняя реализация.
+
 ```
 FermixAPI/
-├── Core/
-│   ├── FermixCore.cs       # Ядро API и статический доступ
-│   ├── FermixEvents.cs     # Система событий с обертками
-│   ├── FermixLog.cs        # Расширенное логирование
-│   ├── FermixScheduler.cs  # Таймеры и отложенные действия
-│   ├── FermixHintStack.cs  # Стек хинтов с приоритетами
-│   └── FermixPaths.cs      # Авто-создание папок плагина
-├── Extensions/
-│   ├── PlayerExtensions.cs # 70+ методов расширения для Player
-│   └── FermixHint.cs       # Система подсказок и UI
-├── Systems/
-│   ├── FermixDoors.cs      # Управление дверями
-│   ├── FermixWarhead.cs    # Управление боеголовкой
-│   ├── FermixItems.cs      # Управление предметами
-│   ├── FermixRooms.cs      # Управление комнатами
-│   ├── FermixCams.cs       # Управление камерами
-│   ├── FermixScp.cs        # Управление SCP
-│   ├── FermixServer.cs     # Управление сервером и CASSIE
-│   ├── FermixRound.cs      # Управление раундом
-│   ├── FermixRoles.cs      # Управление ролями
-│   ├── FermixGlow.cs       # Кастомное свечение pickup'ов
-│   └── FermixInput.cs      # SSS-биндинги клавиш
-├── Commands/
-│   ├── TpsCommand.cs       # .tps
-│   ├── RoundTimeCommand.cs # .rt
-│   ├── SuicideCommand.cs   # .kill
-│   ├── ResurrectCommand.cs # .res
-│   └── WeaponSwapCommand.cs# .weaponswap
-├── Integration/
-│   └── LabApiIntegration.cs # Интеграция с LabAPI
-├── Utils/
-│   ├── FermixUtils.cs      # Общие утилиты
-│   ├── FermixConfig.cs     # Работа с конфигурациями
-│   └── FermixData.cs       # Хранение данных
-├── Plugin.cs               # Точка входа плагина
-└── Config.cs               # Конфигурация плагина
+├── Plugin.cs                  # EXILED entry-point (FermixAPI.Plugin)
+├── Config.cs                  # Конфигурация плагина
+├── Core/                      # Ядро и жизненный цикл API
+│   ├── FermixCore.cs            • Нуклеус (инициализация, shutdown, корутины)
+│   ├── FermixEvents.cs          • Обёртка над EXILED-событиями
+│   ├── FermixScheduler.cs       • Таймеры, Delay/Repeat/Countdown
+│   ├── FermixHintStack.cs       • Стек хинтов (сборщик всех вызовов FermixHint)
+│   ├── FermixLog.cs             • Логирование с префиксом [FermixAPI]
+│   └── FermixPaths.cs           • Каталоги EXILED/Configs/FermixAPI/...
+├── Extensions/                # Публичный fluent-API
+│   ├── FermixHint.cs            • Показ хинтов (Send, Success, Error, SendTyping, …)
+│   └── PlayerExtensions.cs      • 70+ методов поверх Player
+├── Systems/                   # Специализированные подсистемы
+│   ├── FermixServer.cs          • Серверные операции + CASSIE
+│   ├── FermixDoors.cs           • Двери
+│   ├── FermixWarhead.cs         • Боеголовка
+│   ├── FermixItems.cs           • Предметы
+│   ├── FermixRooms.cs           • Комнаты
+│   ├── FermixCams.cs            • Камеры
+│   ├── FermixScp.cs             • SCP-специфика
+│   ├── FermixRound.cs           • Раунд
+│   ├── FermixRoles.cs           • Роли
+│   ├── FermixGlow.cs            • Свечение pickup'ов
+│   └── FermixInput.cs           • SSS-биндинги клавиш
+├── Commands/                  # Консольные команды (.tps / .rt / .kill / .res / .weaponswap)
+├── Integration/               # Мосты к внешним API
+│   └── LabApiIntegration.cs     • LabAPI 1.1.x
+├── Utils/                     # Вспомогательные утилиты
+│   ├── FermixUtils.cs           • Math/random, поиск, formatting (без RichText)
+│   ├── FermixConfig.cs          • YAML конфиги
+│   └── FermixData.cs            • JSON/текстовые файлы
+└── Internal/                  # Внутренняя реализация, не входит в публичный API
+    └── HintEngine/              • Движок отрисовки хинтов (форк HintServiceMeow)
 ```
 
-Все классы из `Systems/` лежат в namespace `FermixAPI.Systems`.
-Расширения Player и базовые типы — в namespace `FermixAPI`.
+Namespace'ы: `FermixAPI` (публичные extension'ы/обёртки), `FermixAPI.Core`,
+`FermixAPI.Systems`, `FermixAPI.Extensions`, `FermixAPI.Commands`,
+`FermixAPI.Integration`, `FermixAPI.Utils`. Внутренний движок хинтов
+исторически живёт в `FermixAPI.Hints.*` (не используй напрямую — всегда
+зови `FermixHint.*`).
 
 ## Быстрый старт
 
@@ -121,7 +124,7 @@ using FermixAPI.Core;
 using FermixAPI.Systems;
 
 // Получить всех живых игроков
-var alivePlayers = FermixCore.AlivePlayers;
+var alivePlayers = FermixServer.GetAlivePlayers();
 
 // Показать подсказку игроку
 player.Hint("Добро пожаловать!", 5);
